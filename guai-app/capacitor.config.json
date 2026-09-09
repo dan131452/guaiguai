@@ -1,0 +1,13 @@
+{
+  "appId": "com.guai.memorial",
+  "appName": "乖乖纪念日",
+  "webDir": "../guai-site",
+  "outDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
