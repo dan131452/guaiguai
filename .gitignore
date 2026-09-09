@@ -1,0 +1,34 @@
+# --- 隐私与个人数据 ---
+# 照片属于隐私数据，仅保存在本机，不入库
+guai-site/photos/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.mp3
+
+# --- 依赖与构建产物 ---
+node_modules/
+dist/
+build/
+*.apk
+*.aab
+*.aar
+
+# --- 项目资源图片（需纳入版本管理，不受上方通配影响）---
+!guai-site/icons/
+!guai-site/icons/*.png
+!guai-app/android/app/src/main/res/**/*.png
+
+# --- 工具目录与缓存 ---
+.codeartsdoer/
+.merkle-snapshot.json
+
+# --- 系统与编辑器 ---
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
