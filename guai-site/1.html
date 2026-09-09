@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我们的照片墙 📷 · 给乖乖的纪念日</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#fdfbf3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+
+<!-- 漂浮小涂鸦 -->
+<svg class="doodle d1" width="42" height="42" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="15" rx="4.6" ry="4.1"/><circle cx="5.6" cy="9.6" r="1.8"/><circle cx="10.2" cy="6.6" r="1.8"/><circle cx="13.8" cy="6.6" r="1.8"/><circle cx="18.4" cy="9.6" r="1.8"/></svg>
+<svg class="doodle d2" width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3C9.5 3 4.5 7.8 4.5 14.5c0 3.4 2.2 5.6 5.6 5.6C16.8 20.1 21.5 14.5 21.5 8c0-2.8-1.5-5-4.5-5z"/><path d="M19.6 3.4c-1 .3-1.6 1.3-1.4 2.6.6-.4 1-.9 1.4-2.6z" fill="#fff"/></svg>
+<svg class="doodle d3" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+<svg class="doodle d4" width="52" height="52" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="15" rx="4.6" ry="4.1"/><circle cx="5.6" cy="9.6" r="1.8"/><circle cx="10.2" cy="6.6" r="1.8"/><circle cx="13.8" cy="6.6" r="1.8"/><circle cx="18.4" cy="9.6" r="1.8"/></svg>
+<svg class="doodle d5" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3C9.5 3 4.5 7.8 4.5 14.5c0 3.4 2.2 5.6 5.6 5.6C16.8 20.1 21.5 14.5 21.5 8c0-2.8-1.5-5-4.5-5z"/></svg>
+<svg class="doodle d6" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+
+<main>
+  <!-- ========== 照片墙 ========== -->
+  <section class="hero" style="padding-bottom:0;">
+    <span class="badge">📷 我们的照片墙</span>
+    <h1 style="font-size:24px;">每一张，都是想<span id="her1">乖乖</span>的证据</h1>
+  </section>
+  <p class="sub">📷 照片放进 photos 文件夹就会显示（加新照片见 README）</p>
+  <div class="photo-grid" id="photoGrid"></div>
+</main>
+
+<footer>
+  made with <span class="heart">❤</span> by <b id="me1">宝宝</b> · <span id="startDateF"></span> 是我们故事的开始<br>
+  <button id="logoutBtn" class="logout-btn" type="button" hidden>退出登录</button>
+</footer>
+
+<!-- ========== 底部导航 ========== -->
+<nav class="tabbar">
+  <a href="index.html" class="tab"><span class="ico">🏠</span><span>首页</span></a>
+  <a href="1.html" class="tab active"><span class="ico">📷</span><span>照片墙</span></a>
+  <a href="2.html" class="tab"><span class="ico">✏️</span><span>小事</span></a>
+  <a href="3.html" class="tab"><span class="ico">✉️</span><span>信</span></a>
+</nav>
+
+<button id="installBtn" class="install-btn" type="button" hidden>📲 把 App 装到桌面</button>
+
+<!-- ========== 登录门禁（配置了 Supabase 才会显示） ========== -->
+<div class="login-overlay" id="loginOverlay" hidden>
+  <div class="login-card">
+    <span class="sticker">🐾 只给我们俩</span>
+    <h2>乖乖纪念日</h2>
+    <p class="login-sub">这是只属于我们的地方，先对一下暗号～</p>
+    <input id="loginUser" class="rec-input" type="text" placeholder="账号" autocomplete="username">
+    <input id="loginPass" class="rec-input" type="password" placeholder="密码" autocomplete="current-password">
+    <button id="loginGo" class="btn" type="button">进来 🐾</button>
+    <p class="form-tip" id="loginTip"></p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/main.js"></script>
+<script src="js/register-sw.js"></script>
+</body>
+</html>

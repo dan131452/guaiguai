@@ -1,0 +1,283 @@
+:root{
+  --cream:#fdfbf3;      /* 奶油底 */
+  --paper:#fffdf7;      /* 卡片纸 */
+  --green:#8fbf6f;      /* 手绘绿 */
+  --deep:#4a6741;       /* 深绿文字 */
+  --soft:#eef5e2;       /* 浅绿 */
+  --peach:#ffd9c0;      /* 蜜桃 */
+  --pink:#ff9e9e;       /* 小心心粉 */
+  --ink:#3f4a33;        /* 正文墨色 */
+  --shadow:0 10px 30px rgba(74,103,65,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+/* hidden 属性优先级最高：防止自定义 display 规则覆盖它 */
+[hidden]{display:none !important;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'ZCOOL KuaiLe','Microsoft YaHei','PingFang SC',sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  overflow-x:hidden;
+}
+/* 手绘风的柔和底色光斑 */
+body::before,body::after{
+  content:'';position:fixed;border-radius:50%;filter:blur(60px);z-index:-1;pointer-events:none;
+}
+body::before{width:500px;height:500px;background:rgba(143,191,111,.25);top:-120px;left:-120px;}
+body::after{width:420px;height:420px;background:rgba(255,158,158,.18);bottom:-100px;right:-100px;}
+
+/* ---------- 漂浮的小涂鸦 ---------- */
+.doodle{position:fixed;opacity:.5;pointer-events:none;z-index:0;animation:floaty 9s ease-in-out infinite;}
+@keyframes floaty{
+  0%,100%{transform:translateY(0) rotate(-6deg);}
+  50%{transform:translateY(-26px) rotate(8deg);}
+}
+.d1{top:12%;left:4%;color:var(--green);animation-duration:11s;}
+.d2{top:30%;right:5%;color:var(--peach);animation-duration:8s;}
+.d3{bottom:18%;left:6%;color:var(--pink);animation-duration:10s;}
+.d4{top:8%;right:12%;color:var(--soft);animation-duration:12s;}
+.d5{bottom:8%;right:8%;color:var(--green);animation-duration:9s;}
+.d6{top:55%;left:2%;color:var(--peach);animation-duration:13s;}
+
+main{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:28px 18px 110px;}
+
+/* ---------- 底部导航栏 ---------- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  display:flex;background:var(--paper);
+  border-top:2.5px solid var(--deep);
+  box-shadow:0 -6px 20px rgba(74,103,65,.12);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:9px 0 7px;text-decoration:none;color:#9daa8c;font-size:12px;
+  font-family:inherit;transition:color .2s;
+}
+.tab .ico{font-size:21px;line-height:1;transition:transform .2s;}
+.tab:hover{color:var(--green);}
+.tab.active{color:var(--deep);}
+.tab.active .ico{transform:scale(1.18);}
+.tab.active span:last-child{font-weight:bold;}
+
+/* ---------- 手绘卡片（不规则的圆角+轻微歪斜） ---------- */
+.hcard{
+  background:var(--paper);
+  border:2.5px solid var(--deep);
+  box-shadow:var(--shadow);
+  padding:26px 24px;
+  margin:26px 0;
+  position:relative;
+}
+.c1{border-radius:255px 18px 225px 18px/18px 225px 18px 255px;transform:rotate(-.4deg);}
+.c2{border-radius:18px 225px 18px 255px/255px 18px 225px 18px;transform:rotate(.3deg);}
+.c3{border-radius:225px 18px 255px 18px/18px 255px 18px 225px;transform:rotate(-.2deg);}
+.sticker{              /* 卡片右上角小贴纸 */
+  position:absolute;top:-16px;right:-10px;
+  background:var(--peach);color:#7a4a2b;
+  border:2px solid var(--deep);
+  border-radius:12px 30px 12px 30px;
+  padding:4px 12px;font-size:14px;transform:rotate(6deg);
+  box-shadow:2px 3px 0 rgba(74,103,65,.25);
+}
+.section-title{
+  font-size:26px;color:var(--deep);text-align:center;margin:46px 0 4px;
+  position:relative;display:inline-block;left:50%;transform:translateX(-50%);
+}
+.section-title svg{position:absolute;left:0;right:0;bottom:-10px;width:100%;height:12px;color:var(--green);}
+.sub{text-align:center;color:#7c8a6a;font-size:14px;margin-top:16px;}
+
+/* ---------- 顶部 Hero ---------- */
+.hero{text-align:center;padding:46px 0 10px;}
+.badge{
+  display:inline-block;background:var(--soft);border:2px dashed var(--green);
+  color:var(--deep);border-radius:999px;padding:6px 16px;font-size:14px;margin-bottom:22px;
+  transform:rotate(-2deg);
+}
+.hero h1{font-size:30px;color:var(--deep);line-height:1.6;}
+.hero h1 .big{
+  font-size:92px;display:block;line-height:1.15;color:var(--green);
+  text-shadow:3px 3px 0 rgba(74,103,65,.15);
+  animation:pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.045);}}
+.hero .unit{font-size:26px;color:var(--deep);}
+.hero .since{color:#7c8a6a;font-size:15px;margin-top:10px;}
+.hero p.extra{color:#8b9779;font-size:14px;margin-top:6px;}
+.paw-row{margin:26px auto 4px;color:var(--green);font-size:22px;letter-spacing:14px;}
+
+/* ---------- 三个倒计时小卡 ---------- */
+.count-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px;}
+.count-card{
+  background:var(--paper);border:2px dashed var(--green);border-radius:18px;
+  padding:16px 10px;text-align:center;box-shadow:var(--shadow);
+  transform:rotate(var(--tilt,0deg));
+}
+.count-card:nth-child(1){--tilt:-1deg;}
+.count-card:nth-child(2){--tilt:.8deg;}
+.count-card:nth-child(3){--tilt:-.6deg;}
+.count-card .num{font-size:34px;color:var(--deep);line-height:1.2;}
+.count-card .num small{font-size:16px;color:var(--green);}
+.count-card .lbl{font-size:13px;color:#7c8a6a;margin-top:6px;line-height:1.5;}
+.count-card .tick{font-size:15px;color:var(--green);letter-spacing:1px;margin-top:4px;}
+
+/* ---------- 照片墙 ---------- */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px;}
+.photo{
+  position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;
+  border:2.5px solid var(--deep);background:var(--soft);
+  box-shadow:var(--shadow);transform:rotate(var(--tilt,0deg));transition:transform .25s;
+}
+.photo:nth-child(odd){--tilt:-1.2deg;}
+.photo:nth-child(even){--tilt:1deg;}
+.photo:hover{transform:rotate(0) scale(1.04);z-index:2;}
+.photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo .ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#9db489;font-size:40px;}
+.photo .ph span{font-size:12px;color:#a9b795;text-align:center;padding:0 8px;line-height:1.5;}
+.photo .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:18px 8px 6px;font-size:12px;color:#fff;
+  background:linear-gradient(transparent,rgba(74,103,65,.72));text-align:center;
+}
+
+/* ---------- 时间线 ---------- */
+.timeline{position:relative;margin-top:30px;padding-left:34px;}
+.timeline::before{
+  content:'';position:absolute;left:12px;top:6px;bottom:6px;width:3px;
+  background:repeating-linear-gradient(var(--green) 0 8px, transparent 8px 14px);
+  border-radius:3px;
+}
+.tl-item{position:relative;margin-bottom:22px;}
+.tl-dot{
+  position:absolute;left:-34px;top:0;width:30px;height:30px;border-radius:50%;
+  background:var(--paper);border:2.5px solid var(--deep);display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.tl-card{
+  background:var(--paper);border:2px solid var(--green);border-radius:12px 22px 12px 22px;
+  padding:14px 16px;box-shadow:var(--shadow);position:relative;
+}
+.tl-card h3{font-size:16px;color:var(--deep);margin-bottom:4px;}
+.tl-card p{font-size:14px;color:var(--ink);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.tl-photo{
+  display:block;width:100%;max-width:320px;margin-top:10px;
+  border-radius:10px;border:2px solid var(--deep);
+}
+.tl-del{
+  position:absolute;top:-10px;right:-8px;width:26px;height:26px;border-radius:50%;
+  border:2px solid var(--deep);background:var(--peach);color:#7a4a2b;
+  font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:2px 2px 0 rgba(74,103,65,.25);
+}
+
+/* ---------- 记一笔表单 ---------- */
+.add-form{
+  background:var(--soft);border:2px dashed var(--green);border-radius:16px;
+  padding:16px 14px;display:flex;flex-direction:column;gap:12px;
+}
+.rec-input{
+  font-family:inherit;font-size:15px;color:var(--ink);
+  background:var(--paper);border:2px solid var(--green);border-radius:12px;
+  padding:10px 12px;width:100%;outline:none;
+}
+.rec-input:focus{border-color:var(--deep);}
+textarea.rec-input{resize:vertical;min-height:76px;line-height:1.6;}
+.form-photo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.photo-btn{font-size:14px;padding:8px 18px;display:inline-block;}
+.photo-name{font-size:12px;color:#7c8a6a;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.photo-preview{width:100%;max-width:240px;border-radius:12px;border:2px solid var(--deep);}
+.form-tip{font-size:13px;color:#7c8a6a;min-height:1em;}
+.form-tip.err{color:#c96b6b;}
+
+/* ---------- 情话 ---------- */
+.quote-box{text-align:center;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.quote-text{
+  font-family:'Ma Shan Zheng','KaiTi',cursive;font-size:27px;color:var(--deep);line-height:1.9;
+  transition:opacity .5s;padding:0 10px;
+}
+.quote-text.fade{opacity:0;}
+.btn{
+  font-family:inherit;font-size:16px;color:#fff;background:var(--green);
+  border:2.5px solid var(--deep);border-radius:999px;padding:10px 26px;cursor:pointer;
+  box-shadow:3px 4px 0 rgba(74,103,65,.3);transition:transform .15s, box-shadow .15s;
+}
+.btn:hover{transform:translate(2px,2px);box-shadow:1px 2px 0 rgba(74,103,65,.3);}
+.btn:active{transform:translate(3px,4px);box-shadow:none;}
+
+/* ---------- 信 ---------- */
+.letter{
+  font-family:'Ma Shan Zheng','KaiTi',cursive;font-size:21px;color:var(--ink);
+  line-height:2.1;white-space:pre-wrap;text-align:left;
+}
+.letter .sign{text-align:right;color:var(--deep);margin-top:18px;font-size:22px;}
+
+/* ---------- 页脚 ---------- */
+footer{
+  text-align:center;color:#8b9779;font-size:13px;padding:10px 18px 40px;line-height:2;
+  position:relative;z-index:1;
+}
+footer .heart{color:var(--pink);animation:pulse 1.6s ease-in-out infinite;display:inline-block;}
+
+/* ---------- 点击冒出的小心心 ---------- */
+.burst{
+  position:fixed;pointer-events:none;font-size:22px;z-index:99;
+  animation:rise 1.3s ease-out forwards;
+}
+@keyframes rise{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.6) rotate(0);}
+  100%{opacity:0;transform:translate(-50%,-160%) scale(1.15) rotate(18deg);}
+}
+
+/* ---------- 卡片在线编辑按钮 ---------- */
+.card-edit{
+  position:absolute;top:14px;right:16px;width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--deep);background:var(--soft);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:2px 2px 0 rgba(74,103,65,.25);
+}
+.card-edit:active{transform:translate(1px,1px);box-shadow:none;}
+#why725 textarea{margin-bottom:10px;}
+#why725 .btn{font-size:14px;padding:8px 20px;}
+
+/* ---------- 登录门禁 ---------- */
+body.locked main, body.locked footer{visibility:hidden;}
+.login-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:var(--cream);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+body:not(.locked) .login-overlay{display:none;}
+.login-card{
+  position:relative;width:100%;max-width:360px;
+  background:var(--paper);border:2.5px solid var(--deep);
+  border-radius:255px 18px 225px 18px/18px 225px 18px 255px;
+  box-shadow:var(--shadow);padding:34px 26px 28px;
+  display:flex;flex-direction:column;gap:14px;text-align:center;
+  transform:rotate(-.4deg);
+}
+.login-card h2{font-size:26px;color:var(--deep);}
+.login-sub{font-size:14px;color:#7c8a6a;margin-bottom:6px;}
+.logout-btn{
+  font-family:inherit;font-size:12px;color:#8b9779;background:none;
+  border:1.5px dashed #b8c6a4;border-radius:999px;padding:4px 14px;cursor:pointer;margin-top:6px;
+}
+.logout-btn:hover{color:var(--deep);border-color:var(--green);}
+
+/* ---------- 一键安装按钮（安卓支持时才显示） ---------- */
+.install-btn{
+  position:fixed;right:16px;bottom:86px;z-index:50;
+  font-family:inherit;font-size:15px;color:#fff;background:var(--pink);
+  border:2.5px solid var(--deep);border-radius:999px;padding:12px 20px;cursor:pointer;
+  box-shadow:3px 4px 0 rgba(74,103,65,.3);
+  animation:floaty 4s ease-in-out infinite;
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:640px){
+  .hero h1 .big{font-size:64px;}
+  .hero h1{font-size:23px;}
+  .count-grid{grid-template-columns:1fr;}
+  .photo-grid{grid-template-columns:repeat(2,1fr);}
+  .count-card .num{font-size:28px;}
+  .quote-text{font-size:22px;}
+  .letter{font-size:19px;}
+  .hcard{padding:20px 16px;}
+}
