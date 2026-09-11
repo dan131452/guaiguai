@@ -8,6 +8,9 @@ guai-site/photos/
 *.webp
 *.mp3
 
+# 图标源文件 1.webp 免于排除（github 图标素材）
+!1.webp
+
 # --- 依赖与构建产物 ---
 node_modules/
 dist/
@@ -24,6 +27,8 @@ build/
 # --- 工具目录与缓存 ---
 .codeartsdoer/
 .merkle-snapshot.json
+.workbuddy/
+OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1/
 
 # --- 系统与编辑器 ---
 .DS_Store

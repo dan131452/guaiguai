@@ -23,9 +23,14 @@ create table if not exists public.moments (
   id uuid primary key default gen_random_uuid(),
   happened_on date not null default current_date,   -- 小事发生的日子
   text text not null default '',                    -- 想记的话
+  author text not null default '',                  -- 谁记的（宝宝/乖乖，旧数据为空不显示）
   image_path text,                                  -- 照片在存储桶里的路径（可空）
   created_at timestamptz not null default now()
 );
+
+/* 已有旧表的环境补加 author 列（可重复执行，不丢数据） */
+alter table public.moments
+  add column if not exists author text not null default '';
 
 alter table public.moments enable row level security;
 
@@ -61,6 +66,28 @@ create policy "settings write" on public.settings
 drop policy if exists "settings update" on public.settings;
 create policy "settings update" on public.settings
   for update to authenticated using (true) with check (true);
+
+-- ---------- 照片墙表：我们的照片（与小事 moments 分开存储） ----------
+create table if not exists public.photos (
+  id uuid primary key default gen_random_uuid(),
+  image_path text not null,                          -- 照片在存储桶里的路径
+  caption text not null default '',                  -- 可选标题
+  created_at timestamptz not null default now()
+);
+
+alter table public.photos enable row level security;
+
+drop policy if exists "photos read" on public.photos;
+create policy "photos read" on public.photos
+  for select to authenticated using (true);
+
+drop policy if exists "photos insert" on public.photos;
+create policy "photos insert" on public.photos
+  for insert to authenticated with check (true);
+
+drop policy if exists "photos delete" on public.photos;
+create policy "photos delete" on public.photos
+  for delete to authenticated using (true);
 
 -- ---------- 照片存储桶 ----------
 insert into storage.buckets (id, name, public)

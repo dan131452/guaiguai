@@ -43,8 +43,8 @@ function makePNG(w, h, pixelAt) {
 }
 
 /* ---------- 爪印图案 ---------- */
-const CREAM = [253, 251, 243];
-const GREEN = [74, 103, 65];
+const CREAM = [255, 255, 255];
+const GREEN = [255, 143, 171];
 function inEllipse(nx, ny, cx, cy, rx, ry) {
   const dx = (nx - cx) / rx, dy = (ny - cy) / ry;
   return dx * dx + dy * dy <= 1;
@@ -86,7 +86,7 @@ for (const [d, sz] of Object.entries(LEGACY)) {
   console.log('mipmap-' + d + '/ic_launcher* -> legacy ' + sz);
 }
 
-/* 背景：纯奶油色 */
+/* 背景：纯白色 */
 fs.writeFileSync(path.join(RES, 'drawable', 'ic_launcher_background.xml'),
 `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -95,16 +95,16 @@ fs.writeFileSync(path.join(RES, 'drawable', 'ic_launcher_background.xml'),
     android:viewportHeight="108"
     android:viewportWidth="108">
     <path
-        android:fillColor="#FDFBF3"
+        android:fillColor="#FFFFFF"
         android:pathData="M0,0h108v108h-108z" />
 </vector>
 `);
-console.log('drawable/ic_launcher_background.xml -> 奶油色');
+console.log('drawable/ic_launcher_background.xml -> 白色');
 
 /* 修正 strings.xml 的 app_name（UTF-8 中文） */
 const sp = path.join(RES, 'values', 'strings.xml');
 let s = fs.readFileSync(sp, 'utf8');
-const fixed = s.replace(/(<string name="app_name">).*(<\/string>)/, '$1乖乖纪念日$2');
+const fixed = s.replace(/(<string name="app_name">).*(<\/string>)/, '$1妻爱吾$2');
 fs.writeFileSync(sp, fixed, 'utf8');
-console.log('strings.xml app_name -> 乖乖纪念日（' + (s !== fixed ? '已替换' : '已存在/未变化') + '）');
+console.log('strings.xml app_name -> 妻爱吾（' + (s !== fixed ? '已替换' : '已存在/未变化') + '）');
 console.log('done');

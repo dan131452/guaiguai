@@ -112,10 +112,44 @@ function sbHeaders(extra) {
 /* ---------- 读取所有记录（按日期倒序） ---------- */
 async function sbListMoments() {
   await sbEnsureFresh();
-  const url = sbBase() + '/rest/v1/moments?select=id,happened_on,text,image_path,created_at&order=happened_on.desc,created_at.desc';
+  const url = sbBase() + '/rest/v1/moments?select=id,happened_on,text,author,image_path,created_at&order=happened_on.desc,created_at.desc';
   return fetch(url, { headers: sbHeaders() }).then(resp => {
     if (!resp.ok) throw new Error('读取失败 HTTP ' + resp.status);
     return resp.json();
+  });
+}
+
+/* ---------- 照片墙：独立 photos 表（与小事 moments 表分开） ---------- */
+async function sbListPhotos() {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/photos?select=id,image_path,caption,created_at&order=created_at.desc';
+  return fetch(url, { headers: sbHeaders() }).then(resp => {
+    if (!resp.ok) throw new Error('读取失败 HTTP ' + resp.status);
+    return resp.json();
+  });
+}
+
+async function sbAddPhoto(imagePath, caption) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/photos';
+  return fetch(url, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ image_path: imagePath, caption: caption || '' })
+  }).then(resp => {
+    if (!resp.ok) throw new Error('照片记录保存失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
+async function sbDeletePhotoRecord(id, imagePath) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/photos?id=eq.' + encodeURIComponent(id);
+  const jobs = [fetch(url, { method: 'DELETE', headers: sbHeaders() })];
+  if (imagePath) jobs.push(sbDeletePhoto(imagePath));
+  return Promise.all(jobs).then(rs => {
+    if (!rs[0].ok) throw new Error('删除失败 HTTP ' + rs[0].status);
+    return true;
   });
 }
 

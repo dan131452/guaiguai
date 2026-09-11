@@ -159,9 +159,19 @@ if (quoteEl) {
   if (quoteBtn) quoteBtn.addEventListener('click', nextQuote);
 }
 
-/* ---------- 1.html：照片墙 ---------- */
+/* ---------- 1.html：照片墙（云端优先，未配置/断网时兜底本地） ---------- */
 const grid = document.getElementById('photoGrid');
-if (grid) {
+const photoUploadBtn = document.getElementById('photoUploadBtn');
+const photoFileInput = document.getElementById('photoFileInput');
+const photoUploadTip = document.getElementById('photoUploadTip');
+const photoModal = document.getElementById('photoModal');
+const photoModalImg = document.getElementById('photoModalImg');
+const photoModalClose = document.getElementById('photoModalClose');
+const photoModalDel = document.getElementById('photoModalDel');
+
+function renderPhotoGridLocal() {
+  if (!grid) return;
+  grid.innerHTML = '';
   CONFIG.photos.forEach(p => {
     const fig = document.createElement('div');
     fig.className = 'photo';
@@ -171,6 +181,105 @@ if (grid) {
       '<div class="cap">' + p.caption + '</div>';
     grid.appendChild(fig);
   });
+}
+
+function renderPhotoGridCloud(photos) {
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!photos.length) {
+    if (photoUploadTip) photoUploadTip.textContent = '还没有照片哦，点右下角 📷 上传第一张吧 🐾';
+    return;
+  }
+  if (photoUploadTip) photoUploadTip.textContent = '点照片可以看大图、删除 · 点右下角 📷 上传新照片';
+  photos.forEach(t => {
+    const fig = document.createElement('div');
+    fig.className = 'photo';
+    const url = sbPhotoUrl(t.image_path);
+    const cap = (t.caption && t.caption.trim()) || '我们的照片';
+    fig.innerHTML =
+      '<img src="' + esc(url) + '" alt="" loading="lazy" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">' +
+      '<div class="cap">' + esc(cap) + '</div>';
+    grid.appendChild(fig);
+  });
+}
+
+function loadPhotos() {
+  if (!grid) return;
+  if (!sbReady() || !sbLoggedIn()) { renderPhotoGridLocal(); return; }
+  renderPhotoGridCloud([]);
+  sbListPhotos()
+    .then(list => renderPhotoGridCloud(list))
+    .catch(err => {
+      if (photoUploadTip) photoUploadTip.textContent = '⚠️ 云端暂时连不上（' + err.message + '），先展示本地照片';
+      renderPhotoGridLocal();
+    });
+}
+
+/* 上传按钮 → 触发隐藏 file input */
+if (photoUploadBtn && photoFileInput) {
+  photoUploadBtn.addEventListener('click', () => photoFileInput.click());
+}
+
+if (photoFileInput) {
+  photoFileInput.addEventListener('change', () => {
+    const files = Array.from(photoFileInput.files || []);
+    if (!files.length) return;
+    if (!sbReady() || !sbLoggedIn()) { alert('先登录再上传哦 🐾'); photoFileInput.value = ''; return; }
+    if (photoUploadBtn) photoUploadBtn.disabled = true;
+    if (photoUploadTip) photoUploadTip.textContent = '正在上传 ' + files.length + ' 张照片…';
+
+    Promise.all(files.map(f =>
+      sbUploadPhoto(f).then(imagePath =>
+        sbAddPhoto(imagePath, '')
+      )
+    ))
+      .then(() => {
+        if (photoUploadTip) photoUploadTip.textContent = '上传好啦 🐾❤️';
+        loadPhotos();
+      })
+      .catch(err => { if (photoUploadTip) photoUploadTip.textContent = '上传失败：' + err.message + '，再试一次？'; })
+      .finally(() => {
+        if (photoUploadBtn) photoUploadBtn.disabled = false;
+        photoFileInput.value = '';
+      });
+  });
+}
+
+/* 照片点击：看大图 + 删除 */
+let currentModalPhoto = null;
+if (grid) {
+  grid.addEventListener('click', e => {
+    const img = e.target.closest('.photo img');
+    if (!img || !img.dataset.id) return;
+    currentModalPhoto = { id: img.dataset.id, img: img.dataset.img };
+    if (photoModalImg) photoModalImg.src = img.src;
+    if (photoModalDel) photoModalDel.hidden = false;
+    if (photoModal) photoModal.hidden = false;
+  });
+}
+
+if (photoModalClose) {
+  photoModalClose.addEventListener('click', () => {
+    if (photoModal) photoModal.hidden = true;
+    if (photoModalImg) photoModalImg.src = '';
+    currentModalPhoto = null;
+  });
+}
+
+if (photoModalDel) {
+  photoModalDel.addEventListener('click', () => {
+    if (!currentModalPhoto) return;
+    if (!confirm('确定删掉这张照片吗？删了就找不回来啦')) return;
+    photoModalDel.disabled = true;
+    sbDeletePhotoRecord(currentModalPhoto.id, currentModalPhoto.img || null)
+      .then(() => { if (photoModal) photoModal.hidden = true; loadPhotos(); })
+      .catch(err => { alert('删除失败：' + err.message); })
+      .finally(() => { if (photoModalDel) photoModalDel.disabled = false; });
+  });
+}
+
+if (photoModal) {
+  photoModal.addEventListener('click', e => { if (e.target === photoModal) photoModalClose.click(); });
 }
 
 /* ---------- 2.html：时间线（优先云端记录，断网/未配置时兜底本地） ---------- */
@@ -198,10 +307,11 @@ function renderTimeline(items) {
     const delHtml = t.id
       ? '<button class="tl-del" type="button" title="删除这条" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">✕</button>'
       : '';
+    const authorTag = t.author ? '<span class="tl-author">' + esc(t.author) + '</span>' : '';
     item.innerHTML =
       '<div class="tl-dot">🐾</div>' +
       '<div class="tl-card">' + delHtml +
-      '<h3>' + esc(fmtTlDate(t.happened_on || t.date)) + '</h3>' +
+      '<h3>' + esc(fmtTlDate(t.happened_on || t.date)) + authorTag + '</h3>' +
       (t.text ? '<p>' + esc(t.text) + '</p>' : '') +
       imgHtml + '</div>';
     tl.appendChild(item);
@@ -253,6 +363,20 @@ if (recDate) {
     recDate.value = n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate());
   })();
 
+  /* author 选择按钮 */
+  const authorMe = document.getElementById('authorMe');
+  const authorHer = document.getElementById('authorHer');
+  let selectedAuthor = CONFIG.me;
+  if (authorMe) authorMe.textContent = CONFIG.me;
+  if (authorHer) authorHer.textContent = CONFIG.her;
+  function selectAuthor(btn) {
+    selectedAuthor = btn.textContent;
+    if (authorMe) authorMe.classList.toggle('active', btn === authorMe);
+    if (authorHer) authorHer.classList.toggle('active', btn === authorHer);
+  }
+  if (authorMe) { authorMe.classList.add('active'); authorMe.addEventListener('click', () => selectAuthor(authorMe)); }
+  if (authorHer) { authorHer.addEventListener('click', () => selectAuthor(authorHer)); }
+
   if (!sbReady()) {
     recSave.disabled = true;
     recSave.textContent = '先在 config.js 填好 Supabase 配置 🐾';
@@ -289,7 +413,8 @@ if (recDate) {
       .then(imagePath => sbAddMoment({
         happened_on: recDate.value,
         text: text,
-        image_path: imagePath
+        image_path: imagePath,
+        author: selectedAuthor
       }))
       .then(() => {
         recText.value = '';
@@ -317,9 +442,62 @@ if (recDate) {
   });
 }
 
-/* ---------- 3.html：给乖乖的信 ---------- */
+/* ---------- 3.html：给乖乖的信（登录后可在线编辑，存云端 settings 表） ---------- */
 const letterEl = document.getElementById('letter');
-if (letterEl) letterEl.textContent = CONFIG.letter;
+const letterEditBtn = document.getElementById('letterEdit');
+const LETTER_KEY = 'letter';
+let letterText = CONFIG.letter || '';
+let letterEditor = null;
+
+function renderLetter() {
+  if (letterEl) letterEl.textContent = letterText || '✨ 这里等你写给乖乖的信……';
+}
+renderLetter();
+
+function showLetterEdit(show) { if (letterEditBtn) letterEditBtn.hidden = !show; }
+
+function refreshLetterFromCloud() {
+  if (!sbReady() || !sbLoggedIn()) return;
+  sbGetSetting(LETTER_KEY)
+    .then(v => { if (v !== null) { letterText = v; renderLetter(); } })
+    .catch(() => { /* 拉不到就用本地文案 */ });
+}
+
+function closeLetterEditor() { letterEl.innerHTML = ''; letterEditor = null; }
+
+if (letterEditBtn) {
+  letterEditBtn.addEventListener('click', () => {
+    if (letterEditor) return;
+    letterEl.innerHTML = '';
+    const ta = document.createElement('textarea');
+    ta.className = 'rec-input';
+    ta.rows = 12;
+    ta.maxLength = 5000;
+    ta.placeholder = '写给乖乖的话…… 🐾';
+    ta.value = letterText;
+    const row = document.createElement('div');
+    row.className = 'form-photo-row';
+    const save = document.createElement('button');
+    save.className = 'btn'; save.type = 'button'; save.textContent = '保存 ✨';
+    const cancel = document.createElement('button');
+    cancel.className = 'btn'; cancel.type = 'button'; cancel.textContent = '取消';
+    row.appendChild(save); row.appendChild(cancel);
+    letterEl.appendChild(ta); letterEl.appendChild(row);
+    letterEditor = true;
+
+    cancel.addEventListener('click', () => { closeLetterEditor(); renderLetter(); });
+    save.addEventListener('click', () => {
+      const val = ta.value.trim();
+      save.disabled = true; save.textContent = '保存中…';
+      sbSetSetting(LETTER_KEY, val)
+        .then(() => { letterText = val; closeLetterEditor(); renderLetter(); })
+        .catch(err => {
+          alert('保存失败：' + err.message);
+          save.disabled = false; save.textContent = '保存 ✨';
+        });
+    });
+  });
+}
 
 /* ---------- 登录门禁：配置了 Supabase 就要先对暗号 ---------- */
 const loginOverlay = document.getElementById('loginOverlay');
@@ -335,7 +513,10 @@ function unlockApp() {
   if (logoutBtn) logoutBtn.hidden = false;
   showWhyEdit(true);
   refreshWhyFromCloud();
+  showLetterEdit(true);
+  refreshLetterFromCloud();
   loadMoments();
+  loadPhotos();
 }
 
 function lockApp() {
@@ -343,12 +524,13 @@ function lockApp() {
   if (loginOverlay) loginOverlay.hidden = false;
   if (logoutBtn) logoutBtn.hidden = true;
   showWhyEdit(false);
+  showLetterEdit(false);
   if (loginUser && CONFIG.supabase.account && !loginUser.value) loginUser.value = CONFIG.supabase.account;
   if (loginPass) loginPass.value = '';
 }
 
 function initAuthGate() {
-  if (!sbReady()) { loadMoments(); return; }   /* 未配置云端：本地模式，不上锁 */
+  if (!sbReady()) { loadMoments(); loadPhotos(); return; }   /* 未配置云端：本地模式，不上锁 */
   if (sbLoggedIn()) { unlockApp(); return; }
   lockApp();
 }
