@@ -5,6 +5,18 @@
 ## [Unreleased]
 - 待添加：1 周年纪念版（2027.07.25）
 
+### ✨ 新增（2026-09-11 · 双人云写日记升级）
+- 照片墙改为云端上传：新建独立 `photos` 表（与小事 `moments` 分开存储），页面右下角 📷 直接选图上传（手机调起相册/相机），点击照片看大图、删除
+- 「一封信」支持在线编辑：登录后卡片 ✏️ 打开编辑器，保存进云端 `settings` 键（`letter`）
+- 「小事」新增"谁记的"作者标识：记一笔时选择 宝宝/乖乖，时间线每条记录显示作者徽章（`moments.author` 列）
+- `supabase-setup.sql` 新增 `photos` 表及 RLS 策略；`moments` 表新增 `author` 列（可重复执行）
+
+### 🔧 品牌统一与安卓打包
+- 全站品牌统一为「妻爱吾」：手机桌面名（app_name / title_activity_main）、4 页登录标题、PWA manifest、页面 title、iOS 桌面名
+- 登录标题「妻爱吾」使用思源宋体（Noto Serif SC，"妻"字笔画纤细清晰）
+- App 图标改为白底粉色猫爪（源文件 `1.webp`，`guai-app/scripts/convert-icon.cjs` 用 sharp 生成）
+- Capacitor 安卓工程首版 APK 构建成功：`guai-app/android/app/build/outputs/apk/debug/app-debug.apk`
+
 ### ✨ 新增（云端记录 · 方案 B）
 - "为什么是 7.25"支持在线编辑：登录后卡片右上角 ✏️ 打开编辑器，保存进云端 `settings` 键值表，未配置/未登录时回退 `CONFIG.why725`
 - `supabase-setup.sql` 新增 `settings` 表（key/value），可重复运行

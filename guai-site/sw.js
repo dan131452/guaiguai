@@ -2,7 +2,7 @@
    策略：network-first（联网优先拿最新版，断网回退缓存保证离线可用）
    隐私约定：/photos/ 下的照片一律不缓存，只走网络；
    Supabase 是跨域请求，本 Worker 不拦截 */
-const CACHE = 'guai-kid-v5';
+const CACHE = 'guai-kid-v6';
 const PRECACHE = [
   './',
   './index.html',

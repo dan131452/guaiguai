@@ -143,20 +143,77 @@ if (daysEl) {
   setInterval(tick, 1000);
 }
 
-/* ---------- 首页：情话轮播 ---------- */
+/* ---------- 首页：情话轮播（登录后可在线编辑，存云端 settings 表） ---------- */
 const quoteEl = document.getElementById('quote');
+const quoteEditBtn = document.getElementById('quoteEdit');
+const QUOTES_KEY = 'quotes';
+let quotes = CONFIG.quotes.slice();
+let quoteEditor = null;
+
+function showQuoteEdit(show) { if (quoteEditBtn) quoteEditBtn.hidden = !show; }
+
+function refreshQuotesFromCloud() {
+  if (!sbReady() || !sbLoggedIn()) return;
+  sbGetSetting(QUOTES_KEY)
+    .then(str => {
+      if (!str) return;
+      try {
+        const arr = JSON.parse(str);
+        if (Array.isArray(arr) && arr.length) { quotes = arr; renderNextQuote(); }
+      } catch (e) { /* 云端格式不对就继续用本地 */ }
+    })
+    .catch(() => { /* 拉不到就用本地文案 */ });
+}
+
+function renderNextQuote() {
+  if (!quoteEl || !quotes.length) return;
+  const i = Math.floor(Math.random() * quotes.length);
+  quoteEl.classList.add('fade');
+  setTimeout(() => { quoteEl.textContent = quotes[i]; quoteEl.classList.remove('fade'); }, 350);
+}
+
 if (quoteEl) {
-  let qi = -1;
-  function nextQuote(){
-    let next;
-    do { next = Math.floor(Math.random() * CONFIG.quotes.length); } while (next === qi && CONFIG.quotes.length > 1);
-    qi = next;
-    quoteEl.classList.add('fade');
-    setTimeout(() => { quoteEl.textContent = CONFIG.quotes[qi]; quoteEl.classList.remove('fade'); }, 350);
-  }
-  nextQuote();
+  renderNextQuote();
   const quoteBtn = document.getElementById('quoteBtn');
-  if (quoteBtn) quoteBtn.addEventListener('click', nextQuote);
+  if (quoteBtn) quoteBtn.addEventListener('click', renderNextQuote);
+}
+
+if (quoteEditBtn) {
+  quoteEditBtn.addEventListener('click', () => {
+    if (quoteEditor) return;
+    quoteEl.innerHTML = '';
+    const ta = document.createElement('textarea');
+    ta.className = 'rec-input';
+    ta.rows = 6;
+    ta.maxLength = 5000;
+    ta.placeholder = '一句一行，写下想对' + CONFIG.her + '说的话 🐾';
+    ta.value = quotes.join('\n');
+    const row = document.createElement('div');
+    row.className = 'form-photo-row';
+    const save = document.createElement('button');
+    save.className = 'btn'; save.type = 'button'; save.textContent = '保存 ✨';
+    const cancel = document.createElement('button');
+    cancel.className = 'btn'; cancel.type = 'button'; cancel.textContent = '取消';
+    row.appendChild(save); row.appendChild(cancel);
+    quoteEl.appendChild(ta); quoteEl.appendChild(row);
+    quoteEditor = true;
+
+    cancel.addEventListener('click', () => { quoteEl.innerHTML = ''; quoteEditor = null; renderNextQuote(); });
+    save.addEventListener('click', () => {
+      const lines = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+      save.disabled = true; save.textContent = '保存中…';
+      sbSetSetting(QUOTES_KEY, JSON.stringify(lines))
+        .then(() => {
+          quotes = lines.length ? lines : CONFIG.quotes.slice();
+          quoteEl.innerHTML = ''; quoteEditor = null;
+          renderNextQuote();
+        })
+        .catch(err => {
+          alert('保存失败：' + err.message);
+          save.disabled = false; save.textContent = '保存 ✨';
+        });
+    });
+  });
 }
 
 /* ---------- 1.html：照片墙（云端优先，未配置/断网时兜底本地） ---------- */
@@ -515,6 +572,8 @@ function unlockApp() {
   refreshWhyFromCloud();
   showLetterEdit(true);
   refreshLetterFromCloud();
+  showQuoteEdit(true);
+  refreshQuotesFromCloud();
   loadMoments();
   loadPhotos();
 }
@@ -525,6 +584,7 @@ function lockApp() {
   if (logoutBtn) logoutBtn.hidden = true;
   showWhyEdit(false);
   showLetterEdit(false);
+  showQuoteEdit(false);
   if (loginUser && CONFIG.supabase.account && !loginUser.value) loginUser.value = CONFIG.supabase.account;
   if (loginPass) loginPass.value = '';
 }
