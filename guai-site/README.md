@@ -141,4 +141,4 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 
 ---
 
-made with ❤️ · 版本记录见 [CHANGELOG.md](CHANGELOG.md)
+made with ❤️ · 版本记录见 [CHANGELOG.md](CHANGELOG.md) · 许可协议 [MIT](../LICENSE)
