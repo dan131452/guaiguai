@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>妻爱吾 ✏️ · 我们的小事</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&text=妻爱吾&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#fdfbf3">
@@ -51,6 +48,7 @@
           <input type="file" id="recPhoto" accept="image/*" hidden>
         </label>
         <span class="photo-name" id="photoName"></span>
+        <button class="btn btn-plain" id="recCancel" type="button" hidden>取消编辑</button>
         <button class="btn" id="recSave" type="button">记下来 🐾</button>
       </div>
       <img id="photoPreview" class="photo-preview" alt="" hidden>
@@ -58,11 +56,17 @@
     </div>
     <div class="timeline" id="timeline"></div>
   </div>
+  <div class="tl-filter" id="tlFilter">
+    <button class="filter-btn active" id="filterAll" type="button">全部</button>
+    <button class="filter-btn" id="filterMe" type="button"></button>
+    <button class="filter-btn" id="filterHer" type="button"></button>
+  </div>
 </main>
 
 <footer>
   made with <span class="heart">❤</span> by <b id="me1">宝宝</b> · <span id="startDateF"></span> 是我们故事的开始<br>
   <button id="logoutBtn" class="logout-btn" type="button" hidden>退出登录</button>
+  <button id="exportBtn" class="logout-btn" type="button" hidden>💾 导出备份</button>
 </footer>
 
 <!-- ========== 底部导航 ========== -->

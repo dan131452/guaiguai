@@ -53,13 +53,13 @@
   const s = new Date(CONFIG.startDate);
   const ann = nextYearly(s.getMonth(), s.getDate());
   const annNo = ann.getFullYear() - startYear;
-  list.push({ id: nextId++, title: '🐾 在一起 ' + annNo + ' 周年啦', body: '今天是我们的 ' + annNo + ' 周年纪念日，要去见乖乖呀。', at: ann });
+  list.push({ id: nextId++, title: '🐾 在一起 ' + annNo + ' 周年啦', body: '今天是我们的 ' + annNo + ' 周年纪念日，要去见' + (CONFIG.her || '她') + '呀。', at: ann });
 
   /* 3. 她的生日（config.js 填了 birthday 才提醒，格式 MM-DD） */
   const bd = CONFIG.birthday || '';
   if (/^\d{2}-\d{2}$/.test(bd)) {
     const [bm, bdd] = bd.split('-').map(Number);
-    list.push({ id: nextId++, title: '🎂 乖乖的生日', body: '今天是她生日，记得第一时间祝她生日快乐！', at: nextYearly(bm - 1, bdd) });
+    list.push({ id: nextId++, title: '🎂 ' + (CONFIG.her || '她') + '的生日', body: '今天是她生日，记得第一时间祝她生日快乐！', at: nextYearly(bm - 1, bdd) });
   }
 
   if (!list.length) return;

@@ -179,6 +179,44 @@ async function sbDeleteMoment(id, imagePath) {
   });
 }
 
+/* ---------- 备份导出：三张表全量拉取 ---------- */
+async function sbListSettings() {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/settings?select=key,value,updated_at&order=key.asc';
+  return fetch(url, { headers: sbHeaders() }).then(resp => {
+    if (!resp.ok) throw new Error('读取失败 HTTP ' + resp.status);
+    return resp.json();
+  });
+}
+
+/* ---------- 照片说明（photos.caption） ---------- */
+async function sbUpdatePhotoCaption(id, caption) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/photos?id=eq.' + encodeURIComponent(id);
+  return fetch(url, {
+    method: 'PATCH',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ caption: caption })
+  }).then(resp => {
+    if (!resp.ok) throw new Error('保存说明失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
+/* ---------- 编辑一条小事（文字/日期/作者/换照片；image_path 传 null 表示不动） ---------- */
+async function sbUpdateMoment(id, changes) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/moments?id=eq.' + encodeURIComponent(id);
+  return fetch(url, {
+    method: 'PATCH',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(changes)
+  }).then(resp => {
+    if (!resp.ok) throw new Error('更新失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
 /* ---------- 上传照片（先压缩，随机文件名） ---------- */
 async function sbUploadPhoto(file) {
   await sbEnsureFresh();

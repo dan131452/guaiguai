@@ -11,8 +11,8 @@
 | 页面 | 内容 | 能否在线编辑 |
 |---|---|---|
 | `index.html` 首页 | 在一起天数实时计时、1 周年/100 天倒计时、**为什么是 7.25**、情话轮播 | ✏️ 7.25 的故事登录后可编辑 |
-| `1.html` 照片墙 | 云端照片九宫格、点开看大图、删除、右下角 📷 上传(手机调起相册/相机) | ✅ 上传/删除 |
-| `2.html` 我们的小事 | 时间线:记一笔(日期+文字+照片)、删除 | ✅ 记录/删除 |
+| `1.html` 照片墙 | 云端照片九宫格、点开看大图、写说明、下载原图、删除、右下角 📷 上传 | ✅ 上传/说明/下载/删除 |
+| `2.html` 我们的小事 | 时间线:记一笔(日期+文字+照片+作者)、编辑、按人筛选、删除 | ✅ 记录/编辑/筛选/删除 |
 | `3.html` 一封信 | 给她的信 | ✏️ 登录后整封可编辑 |
 
 通用能力:
@@ -21,6 +21,8 @@
 - **离线可用**:Service Worker 缓存页面,断网显示最近内容。
 - **一键安装**:安卓 Chrome 打开会浮出"📲 把 App 装到桌面",装成全屏 WebAPK。
 - **图片自动压缩**:上传前压到长边 1600px,省流量省存储。
+- **一键备份**:登录后页脚「💾 导出备份」把三张表打包成 JSON 下载。
+- **字体本地化**:手绘字体存放在 `fonts/`,不依赖 Google Fonts,国内网络字体不再丢失。
 
 ## 二、架构与技术栈
 
@@ -46,7 +48,7 @@
 | PWA | manifest + Service Worker + beforeinstallprompt | network-first 缓存:联网拿最新,断网回退 |
 | 后端 | Supabase(Auth / PostgREST / Storage) | 三张表:`moments` 小事、`photos` 照片墙、`settings` 可编辑内容;RLS 限登录用户 |
 | 安卓 | Capacitor(WebView 壳) | `guai-app/`,`webDir` 直接指向本目录,appName 已设为"妻爱吾" |
-| 工具 | Git + Node 脚本 | 图标生成用纯 Node(zlib 手写 PNG 编码),安卓图标用 sharp |
+| 工具 | Git + Node 脚本 + GitHub Actions | 图标生成用纯 Node;安卓图标用 sharp;Actions 每周保活 Supabase |
 
 **数据三层降级**:云端 → localStorage 缓存 → `js/config.js` 兜底文案,断网或未配置时页面不空。
 
@@ -116,11 +118,12 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 | 页面文案/结构 | 对应 `*.html` |
 | 样式 | `css/style.css` |
 | 云端接口 | `js/db.js`;页面逻辑 `js/main.js` |
+| 手绘字体 | `fonts/`(woff/woff2),用 `node scripts/fetch-fonts.cjs` 重新下载 |
 | 数据库表/权限 | `supabase-setup.sql`,改完去 SQL Editor 重跑 |
 
 **改密码 / 加账号**:Supabase → Authentication → Users 里重置或新增(新账号邮箱要符合 `账号名@guai.site` 的拼法)。
 
-**备份**:Supabase Dashboard → Table Editor 导出 CSV;Storage 里下载照片原件。数据都在云端,换手机重装登录即恢复。
+**备份**:登录后任意页页脚点「💾 导出备份」下载 JSON(含三张表数据 + 照片直链清单),建议每年纪念日记一份到网盘;照片原件也可在 Storage 或照片墙弹窗里逐张下载。数据在云端,换手机重装登录即恢复。
 
 ## 八、常见问题
 

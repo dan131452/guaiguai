@@ -1,8 +1,9 @@
-/* 给乖乖的纪念日网站 — Service Worker
-   策略：network-first（联网优先拿最新版，断网回退缓存保证离线可用）
+/* 妻爱吾 — Service Worker
+   策略：页面/JS/CSS network-first（联网优先拿最新版，断网回退缓存保证离线可用）；
+        fonts/ 字体文件 cache-first（字体基本不变，一次缓存长期离线可用）
    隐私约定：/photos/ 下的照片一律不缓存，只走网络；
    Supabase 是跨域请求，本 Worker 不拦截 */
-const CACHE = 'guai-kid-v7';
+const CACHE = 'guai-kid-v8';
 const PRECACHE = [
   './',
   './index.html',
@@ -16,6 +17,7 @@ const PRECACHE = [
   './js/register-sw.js',
   './js/reminders.js',
   './manifest.json',
+  './fonts/fonts.css',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png'
@@ -42,6 +44,22 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;          /* 跨域(Supabase等)不拦 */
   if (url.pathname.includes('/photos/')) return;            /* 照片隐私，不缓存 */
+
+  /* 字体文件 cache-first：内容不变，装进缓存后离线也能有手绘字体 */
+  if (url.pathname.includes('/fonts/')) {
+    e.respondWith(
+      caches.match(e.request).then(cached =>
+        cached || fetch(e.request).then(resp => {
+          if (resp && resp.ok) {
+            const copy = resp.clone();
+            caches.open(CACHE).then(c => c.put(e.request, copy));
+          }
+          return resp;
+        })
+      )
+    );
+    return;
+  }
 
   /* 页面本身走 network-first：部署了新版本，刷新就能看到，不会被旧缓存卡住 */
   if (e.request.mode === 'navigate') {

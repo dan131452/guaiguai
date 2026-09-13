@@ -1,0 +1,22 @@
+@font-face {
+  font-family: 'ZCOOL KuaiLe';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(files/zcool-kuaile.woff) format('woff');
+}
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(files/ma-shan-zheng.woff) format('woff');
+}
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(files/qiaiwu-subset.woff2) format('woff2');
+  unicode-range: U+543e, U+59bb, U+7231;
+}

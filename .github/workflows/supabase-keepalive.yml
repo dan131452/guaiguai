@@ -1,0 +1,21 @@
+# Supabase 免费项目保活：免费档 7 天无活动会被自动暂停（暂停后 App 全部功能失效）。
+# 本任务每周一 UTC 1:00（北京时间 9:00）自动 ping 一次 REST 端点，保持项目活跃。
+# anon key 本来就是公开密钥，写在这里没有安全问题。
+name: supabase-keepalive
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'   # 每周一北京时间 09:00
+  workflow_dispatch:       # 也允许在 Actions 页面手动触发
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: sb_publishable_D7yL8_0Dlu60_68XG1LQZQ_Ga8V2XY-" \
+            "https://wwupbdkkvotqlihbujjx.supabase.co/rest/v1/")
+          echo "HTTP $code"
+          test "$code" = "200"

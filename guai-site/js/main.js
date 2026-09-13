@@ -73,6 +73,11 @@ const ANN_M = startDateObj.getMonth();   // 纪念日月份（0-11）
 const ANN_D = startDateObj.getDate();    // 纪念日日号
 
 function pad(n){ return String(n).padStart(2,'0'); }
+/* 今天的 YYYY-MM-DD（date input 用） */
+function todayStr(){
+  const n = new Date();
+  return n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate());
+}
 /* 数字格式：2026.07.25 */
 function fmtDate(d){ return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()); }
 /* 中文格式：2026 年 7 月 25 日 */
@@ -225,6 +230,10 @@ const photoModal = document.getElementById('photoModal');
 const photoModalImg = document.getElementById('photoModalImg');
 const photoModalClose = document.getElementById('photoModalClose');
 const photoModalDel = document.getElementById('photoModalDel');
+const photoModalCap = document.getElementById('photoModalCap');
+const photoModalCapSave = document.getElementById('photoModalCapSave');
+const photoModalDl = document.getElementById('photoModalDl');
+const photoModalTip = document.getElementById('photoModalTip');
 
 function renderPhotoGridLocal() {
   if (!grid) return;
@@ -260,13 +269,16 @@ function renderPhotoGridCloud(photos) {
   });
 }
 
+let lastPhotosList = [];   /* 云端照片列表缓存，弹窗里写说明要用 */
+
 function loadPhotos() {
   if (!grid) return;
-  if (!sbReady() || !sbLoggedIn()) { renderPhotoGridLocal(); return; }
+  if (!sbReady() || !sbLoggedIn()) { lastPhotosList = []; renderPhotoGridLocal(); return; }
   renderPhotoGridCloud([]);
   sbListPhotos()
-    .then(list => renderPhotoGridCloud(list))
+    .then(list => { lastPhotosList = list; renderPhotoGridCloud(list); })
     .catch(err => {
+      lastPhotosList = [];
       if (photoUploadTip) photoUploadTip.textContent = '⚠️ 云端暂时连不上（' + err.message + '），先展示本地照片';
       renderPhotoGridLocal();
     });
@@ -302,16 +314,39 @@ if (photoFileInput) {
   });
 }
 
-/* 照片点击：看大图 + 删除 */
+/* ---------- 照片大图弹窗 ----------
+   manage=true：照片墙的云端照片（可写说明、可删）
+   manage=false：只看不删（时间线里的照片），保留下载 */
 let currentModalPhoto = null;
+
+function openPhotoModal(opts) {
+  if (!photoModal || !photoModalImg) return;
+  currentModalPhoto = opts.manage ? { id: opts.id, img: opts.path || '', caption: opts.caption || '' } : null;
+  photoModalImg.src = opts.src;
+  if (photoModalCap) {
+    photoModalCap.hidden = !opts.manage;
+    photoModalCap.value = opts.manage ? (opts.caption || '') : '';
+  }
+  if (photoModalCapSave) photoModalCapSave.hidden = !opts.manage;
+  if (photoModalDel) photoModalDel.hidden = !opts.manage;
+  if (photoModalDl) photoModalDl.hidden = false;
+  if (photoModalTip) photoModalTip.textContent = '';
+  photoModal.hidden = false;
+}
+
+/* 照片墙网格：点照片进弹窗（可管理） */
 if (grid) {
   grid.addEventListener('click', e => {
     const img = e.target.closest('.photo img');
     if (!img || !img.dataset.id) return;
-    currentModalPhoto = { id: img.dataset.id, img: img.dataset.img };
-    if (photoModalImg) photoModalImg.src = img.src;
-    if (photoModalDel) photoModalDel.hidden = false;
-    if (photoModal) photoModal.hidden = false;
+    const rec = (lastPhotosList || []).find(p => p.id === img.dataset.id);
+    openPhotoModal({
+      src: img.src,
+      manage: true,
+      id: img.dataset.id,
+      path: img.dataset.img,
+      caption: rec ? rec.caption : ''
+    });
   });
 }
 
@@ -323,6 +358,54 @@ if (photoModalClose) {
   });
 }
 
+if (photoModal) {
+  photoModal.addEventListener('click', e => { if (e.target === photoModal) photoModalClose.click(); });
+}
+
+/* 存照片说明 */
+if (photoModalCapSave) {
+  photoModalCapSave.addEventListener('click', () => {
+    if (!currentModalPhoto) return;
+    const val = (photoModalCap.value || '').trim();
+    photoModalCapSave.disabled = true;
+    sbUpdatePhotoCaption(currentModalPhoto.id, val)
+      .then(() => {
+        currentModalPhoto.caption = val;
+        if (photoModalTip) photoModalTip.textContent = '说明存好啦 🐾';
+        loadPhotos();
+      })
+      .catch(err => { if (photoModalTip) { photoModalTip.textContent = '没存上：' + err.message; photoModalTip.classList.add('err'); } })
+      .finally(() => { photoModalCapSave.disabled = false; });
+  });
+}
+
+/* 下载到本地：跨域直链的 download 属性不一定生效，用 fetch 转 blob 强制保存 */
+if (photoModalDl) {
+  photoModalDl.addEventListener('click', e => {
+    e.preventDefault();
+    const src = photoModalImg.src;
+    if (!src) return;
+    const old = photoModalDl.textContent;
+    photoModalDl.textContent = '下载中…';
+    fetch(src).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.blob();
+    }).then(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = 'qiaiwu-' + Date.now() + '.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      if (photoModalTip) photoModalTip.textContent = '已保存到你的下载文件夹啦 🐾';
+    }).catch(() => {
+      /* 拉不动就开新标签页，让用户长按保存 */
+      window.open(src, '_blank');
+    }).finally(() => { photoModalDl.textContent = old; });
+  });
+}
+
 if (photoModalDel) {
   photoModalDel.addEventListener('click', () => {
     if (!currentModalPhoto) return;
@@ -331,12 +414,8 @@ if (photoModalDel) {
     sbDeletePhotoRecord(currentModalPhoto.id, currentModalPhoto.img || null)
       .then(() => { if (photoModal) photoModal.hidden = true; loadPhotos(); })
       .catch(err => { alert('删除失败：' + err.message); })
-      .finally(() => { if (photoModalDel) photoModalDel.disabled = false; });
+      .finally(() => { photoModalDel.disabled = false; });
   });
-}
-
-if (photoModal) {
-  photoModal.addEventListener('click', e => { if (e.target === photoModal) photoModalClose.click(); });
 }
 
 /* ---------- 2.html：时间线（优先云端记录，断网/未配置时兜底本地） ---------- */
@@ -352,22 +431,33 @@ function fmtTlDate(d) {
 }
 
 const tl = document.getElementById('timeline');
+/* 当前时间线数据（云端成功加载后缓存），编辑/筛选都要用 */
+let momentsList = [];
+/* 按人筛选：'' = 全部 */
+let currentFilter = '';
+
 function renderTimeline(items) {
   if (!tl) return;
+  const shown = currentFilter ? items.filter(t => (t.author || '') === currentFilter) : items;
   tl.innerHTML = '';
-  items.forEach(t => {
+  if (!shown.length) {
+    tl.innerHTML = '<p class="tl-empty">' + (currentFilter ? '这个人还没记过小事，等ta写第一笔吧 🐾' : '还没有记录，从上面记第一笔开始吧 🐾') + '</p>';
+    return;
+  }
+  shown.forEach(t => {
     const item = document.createElement('div');
     item.className = 'tl-item';
     const imgHtml = t.image_path
       ? '<img class="tl-photo" loading="lazy" src="' + esc(t.__imgUrl || sbPhotoUrl(t.image_path)) + '" alt="">'
       : '';
-    const delHtml = t.id
-      ? '<button class="tl-del" type="button" title="删除这条" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">✕</button>'
+    const actHtml = t.id
+      ? '<button class="tl-edit" type="button" title="编辑这条" data-id="' + esc(t.id) + '">✎</button>' +
+        '<button class="tl-del" type="button" title="删除这条" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">✕</button>'
       : '';
     const authorTag = t.author ? '<span class="tl-author">' + esc(t.author) + '</span>' : '';
     item.innerHTML =
       '<div class="tl-dot">🐾</div>' +
-      '<div class="tl-card">' + delHtml +
+      '<div class="tl-card">' + actHtml +
       '<h3>' + esc(fmtTlDate(t.happened_on || t.date)) + authorTag + '</h3>' +
       (t.text ? '<p>' + esc(t.text) + '</p>' : '') +
       imgHtml + '</div>';
@@ -381,17 +471,19 @@ const seedItems = CONFIG.timeline.map(t => ({ date: t.date, text: t.text }));
 function loadMoments() {
   if (!tl) return;
   if (!sbReady()) {
+    momentsList = seedItems;
     renderTimeline(seedItems);
     return;
   }
   /* 先展示上次的缓存，立刻有内容；再拉云端最新 */
   try {
     const cached = JSON.parse(localStorage.getItem(MOMENTS_CACHE) || 'null');
-    if (cached && cached.length) renderTimeline(cached);
+    if (cached && cached.length) { momentsList = cached; renderTimeline(cached); }
   } catch (e) { /* 缓存坏了就忽略 */ }
 
   sbListMoments()
     .then(list => {
+      momentsList = list;
       renderTimeline(list);
       try { localStorage.setItem(MOMENTS_CACHE, JSON.stringify(list)); } catch (e) {}
     })
@@ -400,11 +492,11 @@ function loadMoments() {
       if (tlSub && !document.querySelector('.tl-item')) {
         tlSub.textContent = '⚠️ 云端暂时连不上（' + err.message + '），先展示本地内容';
       }
-      if (!document.querySelector('.tl-item')) renderTimeline(seedItems);
+      if (!document.querySelector('.tl-item')) { momentsList = seedItems; renderTimeline(seedItems); }
     });
 }
 
-/* 2.html：记一笔表单 */
+/* 2.html：记一笔表单（也承担"编辑已有记录"的职责） */
 const formTip = document.getElementById('formTip');
 const recDate = document.getElementById('recDate');
 const recText = document.getElementById('recText');
@@ -412,6 +504,7 @@ const recPhoto = document.getElementById('recPhoto');
 const photoName = document.getElementById('photoName');
 const photoPreview = document.getElementById('photoPreview');
 const recSave = document.getElementById('recSave');
+const recCancel = document.getElementById('recCancel');
 
 if (recDate) {
   /* 日期默认今天 */
@@ -426,13 +519,53 @@ if (recDate) {
   let selectedAuthor = CONFIG.me;
   if (authorMe) authorMe.textContent = CONFIG.me;
   if (authorHer) authorHer.textContent = CONFIG.her;
-  function selectAuthor(btn) {
-    selectedAuthor = btn.textContent;
-    if (authorMe) authorMe.classList.toggle('active', btn === authorMe);
-    if (authorHer) authorHer.classList.toggle('active', btn === authorHer);
+  function selectAuthor(name) {
+    selectedAuthor = name;
+    if (authorMe) authorMe.classList.toggle('active', name === CONFIG.me);
+    if (authorHer) authorHer.classList.toggle('active', name === CONFIG.her);
   }
-  if (authorMe) { authorMe.classList.add('active'); authorMe.addEventListener('click', () => selectAuthor(authorMe)); }
-  if (authorHer) { authorHer.addEventListener('click', () => selectAuthor(authorHer)); }
+  if (authorMe) { authorMe.classList.add('active'); authorMe.addEventListener('click', () => selectAuthor(CONFIG.me)); }
+  if (authorHer) { authorHer.addEventListener('click', () => selectAuthor(CONFIG.her)); }
+
+  /* 按人筛选（时间线上方小按钮） */
+  const filterAll = document.getElementById('filterAll');
+  const filterMe = document.getElementById('filterMe');
+  const filterHer = document.getElementById('filterHer');
+  if (filterMe) filterMe.textContent = CONFIG.me;
+  if (filterHer) filterHer.textContent = CONFIG.her;
+  function applyFilter(f) {
+    currentFilter = f;
+    [[filterAll, ''], [filterMe, CONFIG.me], [filterHer, CONFIG.her]].forEach(([btn, val]) => {
+      if (btn) btn.classList.toggle('active', val === f);
+    });
+    renderTimeline(momentsList);
+  }
+  if (filterAll) filterAll.addEventListener('click', () => applyFilter(''));
+  if (filterMe) filterMe.addEventListener('click', () => applyFilter(CONFIG.me));
+  if (filterHer) filterHer.addEventListener('click', () => applyFilter(CONFIG.her));
+
+  /* 编辑状态：editingId 非空表示在改一条已有记录 */
+  let editingId = null;
+  let editingImg = null;   /* 原照片路径，换新照片成功后要删掉旧的 */
+  function setEditMode(rec) {
+    editingId = rec ? rec.id : null;
+    editingImg = rec ? (rec.image_path || null) : null;
+    if (recSave) recSave.textContent = rec ? '保存修改 ✨' : '记下来 🐾';
+    if (recCancel) recCancel.hidden = !rec;
+    if (rec && tip) tip('正在编辑这条小事，改完点"保存修改"');
+    if (!rec && tip && formTip) { tip(''); formTip.classList.remove('err'); }
+  }
+  if (recCancel) recCancel.addEventListener('click', () => {
+    recText.value = '';
+    recPhoto.value = '';
+    pickedFile = null;
+    photoName.textContent = '';
+    photoPreview.hidden = true;
+    photoPreview.src = '';
+    recDate.value = todayStr();
+    selectAuthor(CONFIG.me);
+    setEditMode(null);
+  });
 
   if (!sbReady()) {
     recSave.disabled = true;
@@ -460,35 +593,66 @@ if (recDate) {
 
   recSave.addEventListener('click', () => {
     const text = recText.value.trim();
-    if (!text && !pickedFile) { tip('写点什么或者选张照片再记呀 🐾', true); return; }
+    if (!text && !pickedFile && !editingImg) { tip('写点什么或者选张照片再记呀 🐾', true); return; }
     if (!recDate.value) { tip('选一下日期哦', true); return; }
 
     recSave.disabled = true;
-    tip(pickedFile ? '正在上传照片…' : '正在保存…');
+    tip(pickedFile ? '正在上传照片…' : (editingId ? '正在保存修改…' : '正在保存…'));
 
-    (pickedFile ? sbUploadPhoto(pickedFile) : Promise.resolve(null))
-      .then(imagePath => sbAddMoment({
-        happened_on: recDate.value,
-        text: text,
-        image_path: imagePath,
-        author: selectedAuthor
-      }))
-      .then(() => {
+    const newPhoto = pickedFile ? sbUploadPhoto(pickedFile) : Promise.resolve(undefined);
+    newPhoto
+      .then(imagePath => {
+        if (editingId) {
+          const changes = { happened_on: recDate.value, text: text, author: selectedAuthor };
+          if (imagePath !== undefined) changes.image_path = imagePath;
+          return sbUpdateMoment(editingId, changes).then(() => imagePath);
+        }
+        return sbAddMoment({
+          happened_on: recDate.value,
+          text: text,
+          image_path: (imagePath === undefined ? null : imagePath),
+          author: selectedAuthor
+        }).then(() => imagePath);
+      })
+      .then(uploadedPath => {
+        /* 编辑时换了新照片：旧的从存储桶里清掉 */
+        if (editingId && uploadedPath !== undefined && editingImg && uploadedPath !== editingImg) {
+          sbDeletePhoto(editingImg).catch(() => {});
+        }
         recText.value = '';
         recPhoto.value = '';
         pickedFile = null;
         photoName.textContent = '';
         photoPreview.hidden = true;
         photoPreview.src = '';
-        tip('记好啦 🐾❤️');
+        recDate.value = todayStr();
+        selectAuthor(CONFIG.me);
+        tip(editingId ? '改好啦 🐾❤️' : '记好啦 🐾❤️');
+        setEditMode(null);
         loadMoments();
       })
       .catch(err => tip(err.message + '，没保存上，再试一次？', true))
       .finally(() => { recSave.disabled = false; });
   });
 
-  /* 删除某条记录（点卡片右上角的 ✕） */
+  /* 时间线卡片上的 ✎ 编辑 / ✕ 删除 */
   tl.addEventListener('click', e => {
+    const editBtn = e.target.closest('.tl-edit');
+    if (editBtn) {
+      const rec = momentsList.find(t => t.id === editBtn.dataset.id);
+      if (!rec) return;
+      recDate.value = rec.happened_on || recDate.value;
+      recText.value = rec.text || '';
+      selectAuthor(rec.author || CONFIG.me);
+      pickedFile = null;
+      recPhoto.value = '';
+      photoName.textContent = rec.image_path ? '(已有照片，选新图可替换)' : '';
+      photoPreview.hidden = true;
+      photoPreview.src = '';
+      setEditMode(rec);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const btn = e.target.closest('.tl-del');
     if (!btn) return;
     if (!confirm('确定删掉这条小事吗？删了就找不回来啦')) return;
@@ -496,6 +660,13 @@ if (recDate) {
     sbDeleteMoment(btn.dataset.id, btn.dataset.img || null)
       .then(() => loadMoments())
       .catch(err => { btn.disabled = false; alert('删除失败：' + err.message); });
+  });
+
+  /* 时间线照片点开大图（只看不删，可下载） */
+  tl.addEventListener('click', e => {
+    const img = e.target.closest('.tl-photo');
+    if (!img) return;
+    openPhotoModal({ src: img.src, manage: false });
   });
 }
 
@@ -507,7 +678,7 @@ let letterText = CONFIG.letter || '';
 let letterEditor = null;
 
 function renderLetter() {
-  if (letterEl) letterEl.textContent = letterText || '✨ 这里等你写给乖乖的信……';
+  if (letterEl) letterEl.textContent = letterText || '✨ 这里等你写给' + CONFIG.her + '的信……';
 }
 renderLetter();
 
@@ -530,7 +701,7 @@ if (letterEditBtn) {
     ta.className = 'rec-input';
     ta.rows = 12;
     ta.maxLength = 5000;
-    ta.placeholder = '写给乖乖的话…… 🐾';
+    ta.placeholder = '写给' + CONFIG.her + '的话…… 🐾';
     ta.value = letterText;
     const row = document.createElement('div');
     row.className = 'form-photo-row';
@@ -563,11 +734,45 @@ const loginPass = document.getElementById('loginPass');
 const loginGo = document.getElementById('loginGo');
 const loginTip = document.getElementById('loginTip');
 const logoutBtn = document.getElementById('logoutBtn');
+const exportBtn = document.getElementById('exportBtn');
+
+/* ---------- 一键备份：三张表打包成 JSON 下载，每年纪念日记一份到网盘 ---------- */
+if (exportBtn) {
+  exportBtn.addEventListener('click', () => {
+    if (!sbReady() || !sbLoggedIn()) { alert('先登录再备份哦 🐾'); return; }
+    exportBtn.disabled = true;
+    const oldText = exportBtn.textContent;
+    exportBtn.textContent = '正在打包…';
+    Promise.all([sbListMoments(), sbListPhotos(), sbListSettings()])
+      .then(([moments, photos, settings]) => {
+        const data = {
+          app: '妻爱吾',
+          exported_at: new Date().toISOString(),
+          moments: moments,
+          photos: photos,
+          settings: settings,
+          photo_urls: photos.map(p => sbPhotoUrl(p.image_path))   /* 照片直链清单，方便批量存原件 */
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        const n = new Date();
+        a.href = URL.createObjectURL(blob);
+        a.download = 'qiaiwu-backup-' + n.getFullYear() + pad(n.getMonth() + 1) + pad(n.getDate()) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      })
+      .catch(err => alert('备份失败：' + err.message))
+      .finally(() => { exportBtn.disabled = false; exportBtn.textContent = oldText; });
+  });
+}
 
 function unlockApp() {
   document.body.classList.remove('locked');
   if (loginOverlay) loginOverlay.hidden = true;
   if (logoutBtn) logoutBtn.hidden = false;
+  if (exportBtn) exportBtn.hidden = false;
   showWhyEdit(true);
   refreshWhyFromCloud();
   showLetterEdit(true);
@@ -582,6 +787,7 @@ function lockApp() {
   document.body.classList.add('locked');
   if (loginOverlay) loginOverlay.hidden = false;
   if (logoutBtn) logoutBtn.hidden = true;
+  if (exportBtn) exportBtn.hidden = true;
   showWhyEdit(false);
   showLetterEdit(false);
   showQuoteEdit(false);
