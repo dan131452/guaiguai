@@ -267,6 +267,46 @@ async function sbSetSetting(key, value) {
   });
 }
 
+/* ---------- Web Push：订阅保存 + 新小事通知 ----------
+   订阅存 push_subscriptions 表（endpoint 唯一，重复开启自动覆盖）；
+   实际推送由 Supabase Edge Function notify-moment 完成。 */
+async function sbSaveSubscription(sub) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/push_subscriptions?on_conflict=endpoint';
+  return fetch(url, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' }),
+    body: JSON.stringify({
+      endpoint: sub.endpoint,
+      p256dh: sub.p256dh,
+      auth: sub.auth,
+      owner: sub.owner,
+      updated_at: new Date().toISOString()
+    })
+  }).then(resp => {
+    if (!resp.ok) throw new Error('订阅保存失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
+/* 通知另一半："xx 记了一件小事"。函数未部署时静默失败，不影响记录 */
+async function sbNotifyPush(author, text) {
+  await sbEnsureFresh();
+  const s = sbSession();
+  const url = sbBase() + '/functions/v1/notify-moment';
+  return fetch(url, {
+    method: 'POST',
+    headers: sbHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + ((s && s.access_token) ? s.access_token : CONFIG.supabase.anonKey)
+    }),
+    body: JSON.stringify({ author: author, text: text || '' })
+  }).then(resp => {
+    if (!resp.ok) throw new Error('推送触发失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
 /* 照片公开访问地址（bucket 设为 public） */
 function sbPhotoUrl(imagePath) {
   if (!imagePath) return '';

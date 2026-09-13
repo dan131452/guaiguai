@@ -3,17 +3,23 @@
         fonts/ 字体文件 cache-first（字体基本不变，一次缓存长期离线可用）
    隐私约定：/photos/ 下的照片一律不缓存，只走网络；
    Supabase 是跨域请求，本 Worker 不拦截 */
-const CACHE = 'guai-kid-v8';
+const CACHE = 'guai-kid-v9';
 const PRECACHE = [
   './',
   './index.html',
   './1.html',
   './2.html',
   './3.html',
+  './report.html',
   './css/style.css',
   './js/config.js',
   './js/db.js',
-  './js/main.js',
+  './js/common.js',
+  './js/home.js',
+  './js/photos.js',
+  './js/moments.js',
+  './js/letter.js',
+  './js/report.js',
   './js/register-sw.js',
   './js/reminders.js',
   './manifest.json',
@@ -86,5 +92,32 @@ self.addEventListener('fetch', e => {
     }).catch(() =>
       caches.match(e.request).then(cached => cached || caches.match('./index.html'))
     )
+  );
+});
+
+/* ---------- Web Push：收到"ta记了一件小事"的推送时弹通知 ---------- */
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) { data = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(data.title || '妻爱吾 🐾', {
+    body: data.body || '',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    tag: 'qiaiwu-moment',
+    data: { url: data.url || './2.html' }
+  }));
+});
+
+/* 点通知跳到对应页面 */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes(self.location.origin)) { c.navigate(url); return c.focus(); }
+      }
+      return self.clients.openWindow(url);
+    })
   );
 });

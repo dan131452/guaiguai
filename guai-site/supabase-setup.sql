@@ -106,5 +106,28 @@ drop policy if exists "moments photo delete" on storage.objects;
 create policy "moments photo delete" on storage.objects
   for delete to authenticated using (bucket_id = 'moments');
 
+-- ---------- Web Push 订阅（互拍提醒） ----------
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  endpoint text not null unique,                     -- 浏览器推送端点（唯一，重复开启覆盖）
+  p256dh text not null,                              -- 推送加密公钥
+  auth text not null,                                -- 推送加密密钥
+  owner text not null default '',                    -- 这部手机是谁的（溶宝/烨航）
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "push subs write" on public.push_subscriptions;
+create policy "push subs write" on public.push_subscriptions
+  for insert to authenticated with check (true);
+
+drop policy if exists "push subs update" on public.push_subscriptions;
+create policy "push subs update" on public.push_subscriptions
+  for update to authenticated using (true) with check (true);
+
+-- 读取/删除只给 service_role（Edge Function 用），不开放给 anon
+
 -- ---------- 清理旧版"小口令"方案的残留（没跑过旧版也不报错） ----------
 drop function if exists public.app_pass_ok();

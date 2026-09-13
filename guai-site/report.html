@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>妻爱吾 ✏️ · 我们的小事</title>
+<title>年度报告 🎁 · 妻爱吾</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="css/style.css">
@@ -11,7 +11,6 @@
 <meta name="theme-color" content="#fdfbf3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="妻爱吾">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
@@ -25,42 +24,22 @@
 <svg class="doodle d6" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
 
 <main>
-  <!-- ========== 我们的小事 ========== -->
   <section class="hero" style="padding-bottom:0;">
-    <span class="badge">✏️ 我们的小事</span>
-    <h1 style="font-size:24px;">一点一滴，都值得记下来</h1>
+    <span class="badge">🎁 年度报告</span>
+    <h1 style="font-size:24px;">今年，我们的小日子</h1>
   </section>
-  <p class="sub" id="tlSub">🐾 在下面记一笔，两个人都能看到</p>
-  <div class="hcard c3">
-    <span class="sticker">✏️ 随手记</span>
-    <div class="add-form" id="addForm">
-      <div class="form-row author-row">
-        <span class="author-label">🐾 是谁记的呀</span>
-        <button class="author-btn" id="authorMe" type="button"></button>
-        <button class="author-btn" id="authorHer" type="button"></button>
-      </div>
-      <div class="form-row">
-        <input type="date" id="recDate" class="rec-input">
-      </div>
-      <textarea id="recText" class="rec-input" rows="3" maxlength="500" placeholder="今天发生了什么小事？（第一次一起吃饭、突然的惊喜、傻乎乎的瞬间……）"></textarea>
-      <div class="form-row form-photo-row">
-        <label class="btn photo-btn">📷 选张照片
-          <input type="file" id="recPhoto" accept="image/*" hidden>
-        </label>
-        <span class="photo-name" id="photoName"></span>
-        <button class="btn btn-plain" id="recCancel" type="button" hidden>取消编辑</button>
-        <button class="btn" id="recSave" type="button">记下来 🐾</button>
-      </div>
-      <img id="photoPreview" class="photo-preview" alt="" hidden>
-      <p class="form-tip" id="formTip"></p>
-    </div>
-    <div class="timeline" id="timeline"></div>
+
+  <!-- 盲盒：点开才揭晓 -->
+  <div class="gift-wrap" id="giftWrap">
+    <button class="gift-box" id="giftBox" type="button" aria-label="打开年度报告">
+      <span class="gift-emoji">🎁</span>
+      <span class="gift-hint">点我开盒</span>
+    </button>
+    <p class="sub" id="giftTip">里面是这一年你们一起记下的事</p>
   </div>
-  <div class="tl-filter" id="tlFilter">
-    <button class="filter-btn active" id="filterAll" type="button">全部</button>
-    <button class="filter-btn" id="filterMe" type="button"></button>
-    <button class="filter-btn" id="filterHer" type="button"></button>
-  </div>
+
+  <!-- 揭晓后的报告 -->
+  <div id="reportBody" hidden></div>
 </main>
 
 <footer>
@@ -74,9 +53,9 @@
 <nav class="tabbar">
   <a href="index.html" class="tab"><span class="ico">🏠</span><span>首页</span></a>
   <a href="1.html" class="tab"><span class="ico">📷</span><span>照片墙</span></a>
-  <a href="2.html" class="tab active"><span class="ico">✏️</span><span>小事</span></a>
+  <a href="2.html" class="tab"><span class="ico">✏️</span><span>小事</span></a>
   <a href="3.html" class="tab"><span class="ico">✉️</span><span>信</span></a>
-  <a href="report.html" class="tab"><span class="ico">🎁</span><span>报告</span></a>
+  <a href="report.html" class="tab active"><span class="ico">🎁</span><span>报告</span></a>
 </nav>
 
 <button id="installBtn" class="install-btn" type="button" hidden>📲 把 App 装到桌面</button>
@@ -97,7 +76,7 @@
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/common.js"></script>
-<script src="js/moments.js"></script>
+<script src="js/report.js"></script>
 <script src="js/register-sw.js"></script>
 <script src="js/reminders.js"></script>
 </body>

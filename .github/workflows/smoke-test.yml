@@ -1,0 +1,25 @@
+# 冒烟测试：每个页面在 jsdom 里完整跑一遍，防止改代码悄悄弄坏某一页
+name: smoke-test
+
+on:
+  push:
+    paths: ['guai-site/**']
+  pull_request:
+    paths: ['guai-site/**']
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guai-site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 安装依赖
+        run: (npm ci || npm i) --no-audit --no-fund
+      - name: 运行冒烟测试
+        run: node tests/smoke.test.cjs

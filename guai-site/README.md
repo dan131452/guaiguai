@@ -6,7 +6,7 @@
 
 ## 一、功能总览
 
-四个页面,底部 Tab 导航切换:
+五个页面,底部 Tab 导航切换:
 
 | 页面 | 内容 | 能否在线编辑 |
 |---|---|---|
@@ -14,6 +14,7 @@
 | `1.html` 照片墙 | 云端照片九宫格、点开看大图、写说明、下载原图、删除、右下角 📷 上传 | ✅ 上传/说明/下载/删除 |
 | `2.html` 我们的小事 | 时间线:记一笔(日期+文字+照片+作者)、编辑、按人筛选、删除 | ✅ 记录/编辑/筛选/删除 |
 | `3.html` 一封信 | 给她的信 | ✏️ 登录后整封可编辑 |
+| `report.html` 报告 | 年度盲盒:今年的小事数、照片数、谁记得多…点开才揭晓 | 自动统计 |
 
 通用能力:
 
@@ -44,7 +45,7 @@
 
 | 层 | 技术 | 说明 |
 |---|---|---|
-| 前端 | 原生 HTML5 / CSS3 / ES6+ | 无框架、无打包,一个 `main.js` 按元素守卫服务全部 4 页 |
+| 前端 | 原生 HTML5 / CSS3 / ES6+ | 无框架、无打包;`common.js`(共用)+ 每页一个脚本,用 QIAIWU 钩子联动登录态 |
 | PWA | manifest + Service Worker + beforeinstallprompt | network-first 缓存:联网拿最新,断网回退 |
 | 后端 | Supabase(Auth / PostgREST / Storage) | 三张表:`moments` 小事、`photos` 照片墙、`settings` 可编辑内容;RLS 限登录用户 |
 | 安卓 | Capacitor(WebView 壳) | `guai-app/`,`webDir` 直接指向本目录,appName 已设为"妻爱吾" |
@@ -56,16 +57,19 @@
 
 ```
 guai-site/
-├── index.html / 1.html / 2.html / 3.html   ← 四个页面
+├── index.html / 1.html / 2.html / 3.html / report.html  ← 五个页面
 ├── css/style.css                           ← 全部样式
 ├── js/
 │   ├── config.js        ★ 配置区:纪念日/昵称/情话/兜底内容/Supabase 密钥
 │   ├── db.js            ← 云端数据层(登录、增删查、上传压缩)
-│   ├── main.js          ← 页面逻辑(四页共用)
+│   ├── common.js        ← 共用:工具/登录门禁/备份/推送订阅(QIAIWU 钩子)
+│   ├── home.js photos.js moments.js letter.js report.js  ← 各页逻辑
 │   └── register-sw.js   ← SW 注册 + 安卓一键安装
 ├── sw.js                ← Service Worker
 ├── manifest.json        ← PWA 清单(App 名/图标)
 ├── supabase-setup.sql   ★ 云端建表脚本(可重复执行)
+├── supabase/functions/  ← Edge Function:notify-moment(互拍推送)
+├── tests/smoke.test.cjs ← 冒烟测试(五页全流程,CI 自动跑)
 ├── icons/ + scripts/    ← 图标与生成脚本
 ├── photos/              ← 本地照片兜底(未登录时照片墙显示)
 └── README.md / CHANGELOG.md
@@ -104,7 +108,25 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 # Android Studio 打开 guai-app/android → Build APK
 ```
 
-## 七、日常维护
+## 七、互拍推送(可选,需一次性部署)
+
+她记了一笔,你手机弹"烨航 记了一件小事 🐾"(谁记的就推谁的名字,对方设备收到)。原理:记录成功后浏览器调用 Supabase Edge Function `notify-moment`,它用 Web Push 给另一半的浏览器订阅发通知。
+
+> 注意:Web Push 只在**浏览器/PWA**里有效;APK 的 WebView 不支持,APK 侧继续用本地纪念日提醒(reminders.js),两者互不冲突。
+
+部署步骤(在 guai-site 目录下执行):
+
+1. 重跑一次 `supabase-setup.sql`(新增 `push_subscriptions` 表)
+2. `npm i -g supabase`(或每次用 `npx supabase`)
+3. `npx supabase login`(浏览器授权一次)
+4. `npx supabase link --project-ref wwupbdkkvotqlihbujjx`
+5. `npx supabase secrets set WEBPUSH_PUBLIC_KEY=公钥 WEBPUSH_PRIVATE_KEY=私钥`
+   (两个密钥在 `vapid-keys.json` 里,公钥已同步填进 `js/config.js`)
+6. `npx supabase functions deploy notify-moment`
+
+部署完成后:手机浏览器打开网站 → 登录 → 页脚点"🔔 开启互拍提醒"→ 允许通知 → 换另一部设备也开一次,然后随便记一笔试试。
+
+## 七-2、日常维护
 
 **平时记录(不碰代码)**:登录后在 2 页记小事/传照片、1 页管理照片墙、首页和 3 页点 ✏️ 改 7.25 故事和信。
 
@@ -117,7 +139,7 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 | 未登录时显示的兜底内容 | `config.js` 的 `why725` / `timeline` / `letter` |
 | 页面文案/结构 | 对应 `*.html` |
 | 样式 | `css/style.css` |
-| 云端接口 | `js/db.js`;页面逻辑 `js/main.js` |
+| 云端接口 | `js/db.js`;页面逻辑 `js/*.js` |
 | 手绘字体 | `fonts/`(woff/woff2),用 `node scripts/fetch-fonts.cjs` 重新下载 |
 | 数据库表/权限 | `supabase-setup.sql`,改完去 SQL Editor 重跑 |
 

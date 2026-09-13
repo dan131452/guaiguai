@@ -5,6 +5,15 @@
 ## [Unreleased]
 - 待添加：1 周年纪念版（2027.07.25）
 
+### ✨ 新增（2026-09-13 · 报告页/互拍推送/工程健康）
+- **年度报告页**：新增 report.html + 底部导航第 5 个入口「🎁 报告」；登录后从云端统计今年的小事数、照片数、字数、最勤快月份、两人各自记了几笔、第一笔与最近一笔，盲盒点开才揭晓（冒小心心庆祝）
+- **互拍推送（Web Push）**：记录成功后调用 Edge Function `notify-moment`，给对方浏览器弹"xx 记了一件小事 🐾"；页脚「🔔 开启互拍提醒」完成订阅（push_subscriptions 表，endpoint 唯一自动覆盖）；APK 的 WebView 不支持 Web Push，该环境自动隐藏入口，APK 继续用本地纪念日提醒
+- **生成 VAPID 密钥**（scripts 内联 node crypto），公钥进 config.js，私钥 vapid-keys.json 已加入 .gitignore 绝不入库
+- **代码拆分**：640 行的 main.js 拆为 common.js（工具/登录门禁/备份/推送订阅 + QIAIWU 钩子）与 home.js / photos.js / moments.js / letter.js / report.js 五个页面脚本，每页只加载自己需要的
+- **jsdom 冒烟测试**：tests/smoke.test.cjs 用 stub 模拟 Supabase，五页各走一遍「登录 → 解锁 → 云端渲染」，共 50 项断言（含盲盒开箱、照片渲染、作者/筛选按钮、编辑按钮显隐）
+- **CI**：新增 .github/workflows/smoke-test.yml，push/PR 触碰 guai-site/** 时自动跑冒烟测试
+- supabase-setup.sql 新增 push_subscriptions 表及 RLS（可重复执行）；sw.js v9 预缓存全部新脚本与 report.html，并新增 push/notificationclick 事件处理
+
 ### ✨ 新增（2026-09-13 · 体验完善与数据安全）
 - **字体本地化**：站酷快乐体 / 马善政完整字体（woff）与「妻爱吾」三字子集（woff2）下载至 fonts/，生成 fonts/fonts.css，四个页面移除 Google Fonts 在线引用——国内网络不再退化成系统字体；scripts/fetch-fonts.cjs 一键重新下载
 - **Service Worker v8**：fonts/ 目录改为 cache-first（字体一次缓存长期离线可用），预缓存列表加入 fonts/fonts.css

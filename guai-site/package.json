@@ -1,0 +1,19 @@
+{
+  "name": "guai-site",
+  "version": "1.0.0",
+  "description": "一套\"无框架前端 + Supabase 云端\"的情侣纪念应用:在一起天数、周年倒计时、云端照片墙、随手记小事、可在线编辑的信。两个人各自登录,看到同一份数据;可以装成手机 App(安卓 PWA / APK),断网也能打开。",
+  "main": "sw.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

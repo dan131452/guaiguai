@@ -60,7 +60,11 @@ const CONFIG = {
     anonKey: 'sb_publishable_D7yL8_0Dlu60_68XG1LQZQ_Ga8V2XY-',                /* 项目设置 → API → Project API keys → anon public */
     bucket: 'moments',          /* 照片存储桶名，和 SQL 里保持一致即可 */
     account: 'wangrong',        /* 登录账号（登录框会预填） */
-    emailSuffix: '@guai.site'   /* 账号会拼成 wangrong@guai.site，要和 Supabase 里建的用户邮箱一致 */
+    emailSuffix: '@guai.site',  /* 账号会拼成 wangrong@guai.site，要和 Supabase 里建的用户邮箱一致 */
+
+    /* Web Push 推送用公钥（私钥在 vapid-keys.json，别提交仓库；
+       要设成 Supabase Edge Function 的 secrets，见 README「互拍推送」） */
+    vapidPublicKey: 'BPDVMM2Bqf0WlOff8-8BUN4DNt0xE5y9WK6aBwuTdP5f6JL6ufGT4_l4cAGGW4G70RUVkNpMshCr5X8FTmEmXn4'
   },
 
   /* 9. 她的生日（可选）：填了的话，App 里到生日当天 9 点会弹通知提醒你；
