@@ -201,15 +201,47 @@ if (photoModalCapDel) {
   });
 }
 
-/* 下载：优先系统分享（安卓/iOS 常见入口可存进相册），否则 fetch 转 blob 强制保存 */
+/* ---------- 安卓 Capacitor：原生写进相册 ----------
+   WebView 里 a.download 常不落盘、Share 也不一定进相册，
+   所以 App 内优先调 GallerySaver 插件 → MediaStore/图片/妻爱吾 */
+function capPlugins() {
+  try {
+    if (window.Capacitor && typeof Capacitor.getPlatform === 'function' && Capacitor.getPlatform() === 'android') {
+      if (Capacitor.Plugins && Capacitor.Plugins.GallerySaver) return Capacitor.Plugins.GallerySaver;
+      if (typeof Capacitor.registerPlugin === 'function') return Capacitor.registerPlugin('GallerySaver');
+    }
+  } catch (e) { /* 浏览器里没有 Capacitor */ }
+  return null;
+}
+
+function isAndroidApp() {
+  try {
+    return !!(window.Capacitor && Capacitor.getPlatform && Capacitor.getPlatform() === 'android');
+  } catch (e) { return false; }
+}
+
+async function saveViaGallerySaver(src) {
+  const gs = capPlugins();
+  if (!gs || typeof gs.saveUrl !== 'function') return false;
+  const name = 'qiaiwu-' + Date.now() + '.jpg';
+  const res = await gs.saveUrl({ url: src, filename: name });
+  return !!(res && (res.ok !== false));
+}
+
+/* 下载：App 内走原生相册；网页优先系统分享，否则 blob 下载 */
 async function downloadPhotoBlob(src) {
+  if (isAndroidApp()) {
+    const ok = await saveViaGallerySaver(src);
+    if (ok) return 'gallery';
+  }
+
   const resp = await fetch(src);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
   const blob = await resp.blob();
   const mime = blob.type || 'image/jpeg';
   const name = 'qiaiwu-' + Date.now() + (mime.indexOf('png') > -1 ? '.png' : '.jpg');
 
-  /* Web Share API：手机浏览器/微信里点"保存到相册"更直接 */
+  /* Web Share API：手机浏览器里点"保存到相册"更直接 */
   try {
     const file = new File([blob], name, { type: mime });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -217,7 +249,6 @@ async function downloadPhotoBlob(src) {
       return 'share';
     }
   } catch (e) {
-    /* 用户取消分享不算失败，继续走下载 */
     if (e && e.name === 'AbortError') return 'cancel';
   }
 
@@ -241,13 +272,14 @@ if (photoModalDl) {
     downloadPhotoBlob(src).then(mode => {
       if (mode === 'cancel') {
         if (photoModalTip) photoModalTip.textContent = '';
+      } else if (mode === 'gallery') {
+        if (photoModalTip) { photoModalTip.textContent = '已存进相册「图片/妻爱吾」啦 🐾'; photoModalTip.classList.remove('err'); }
       } else if (mode === 'share') {
         if (photoModalTip) { photoModalTip.textContent = '选好了保存位置就进相册啦 🐾'; photoModalTip.classList.remove('err'); }
       } else {
-        if (photoModalTip) { photoModalTip.textContent = '已保存到你的下载文件夹啦 🐾（相册里看不到的话，用系统分享再存一次）'; photoModalTip.classList.remove('err'); }
+        if (photoModalTip) { photoModalTip.textContent = '已保存到你的下载文件夹啦 🐾'; photoModalTip.classList.remove('err'); }
       }
     }).catch(() => {
-      /* 拉不动就开新标签页，让用户长按保存 */
       window.open(src, '_blank');
       if (photoModalTip) { photoModalTip.textContent = '已打开原图，可长按保存到相册'; photoModalTip.classList.remove('err'); }
     }).finally(() => { photoModalDl.textContent = old; });

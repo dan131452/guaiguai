@@ -11,6 +11,8 @@ let currentFilter = '';
 const repliesByMoment = {};
 /* 正在输入回复的小事 id */
 let openReplyFor = null;
+/* 回复时选的人（与表单顶部「是谁记的」分开，默认溶宝） */
+let replyAuthor = CONFIG.me;
 
 function repliesHtml(momentId) {
   const list = repliesByMoment[momentId] || [];
@@ -29,7 +31,12 @@ function repliesHtml(momentId) {
 
 function replyFormHtml(momentId) {
   if (openReplyFor !== momentId) return '';
+  const meBtn = '<button class="author-btn' + (replyAuthor === CONFIG.me ? ' active' : '') +
+    '" type="button" data-reply-who="' + esc(CONFIG.me) + '">' + esc(CONFIG.me) + '</button>';
+  const herBtn = '<button class="author-btn' + (replyAuthor === CONFIG.her ? ' active' : '') +
+    '" type="button" data-reply-who="' + esc(CONFIG.her) + '">' + esc(CONFIG.her) + '</button>';
   return '<div class="tl-reply-form" data-moment-id="' + esc(momentId) + '">' +
+    '<div class="tl-reply-who-row"><span class="author-label">谁在回复</span>' + meBtn + herBtn + '</div>' +
     '<input class="rec-input tl-reply-input" type="text" maxlength="200" placeholder="回复这条小事…">' +
     '<div class="tl-reply-actions">' +
     '<button class="btn tl-reply-save" type="button">发送 🐾</button>' +
@@ -297,6 +304,14 @@ if (recDate) {
       }
       return;
     }
+    const replyWho = e.target.closest('[data-reply-who]');
+    if (replyWho) {
+      replyAuthor = replyWho.dataset.replyWho;
+      renderTimeline(momentsList);
+      const input = tl.querySelector('.tl-reply-input');
+      if (input) input.focus();
+      return;
+    }
     const replyDel = e.target.closest('.tl-reply-del');
     if (replyDel) {
       if (!confirm('删掉这条回复吗？')) return;
@@ -322,7 +337,7 @@ if (recDate) {
       if (!text) { if (input) input.focus(); return; }
       if (!sbReady() || !sbLoggedIn()) { alert('先登录再回复哦 🐾'); return; }
       replySave.disabled = true;
-      sbAddReply(id, selectedAuthor, text)
+      sbAddReply(id, replyAuthor, text)
         .then(() => { openReplyFor = null; return loadMoments(); })
         .catch(err => { replySave.disabled = false; alert('回复失败：' + err.message); });
       return;
