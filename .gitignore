@@ -7,6 +7,8 @@ guai-site/photos/
 *.gif
 *.webp
 *.mp3
+# 本地 bug 笔记不入库
+guai-site/bug.md
 
 # 图标源文件 1.webp 免于排除（github 图标素材）
 !1.webp

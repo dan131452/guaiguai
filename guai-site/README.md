@@ -91,7 +91,7 @@ python -m http.server 8137        # 或 npx serve .
 
 1. 注册 [supabase.com](https://supabase.com) → New project(区域选 Singapore)。
 2. SQL Editor 里整个粘贴 `supabase-setup.sql` → RUN(自动建 `moments` / `photos` / `settings` 三张表、RLS 策略和照片桶;可重复执行不丢数据)。
-3. **建登录账号**:Authentication → Users → Add user,邮箱 `wangrong@guai.site`(= `config.js` 里 `account` + `emailSuffix`),密码自定,勾选 **Auto Confirm User**。
+3. **建登录账号**:Authentication → Users → Add user,邮箱用你们自己的（与 `config.js` 里 `account` + `emailSuffix` 一致）,密码自定,勾选 **Auto Confirm User**。
 4. Project Settings → API,把 URL 和 anon key 填进 `js/config.js` 的 `CONFIG.supabase`。
 
 ## 六、部署与安装
@@ -122,6 +122,7 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 4. `npx supabase link --project-ref wwupbdkkvotqlihbujjx`
 5. `npx supabase secrets set WEBPUSH_PUBLIC_KEY=公钥 WEBPUSH_PRIVATE_KEY=私钥`
    (两个密钥在 `vapid-keys.json` 里,公钥已同步填进 `js/config.js`)
+   可选收紧跨域:`npx supabase secrets set ALLOWED_ORIGINS=https://你的域名,http://localhost:xxx`
 6. `npx supabase functions deploy notify-moment`
 
 部署完成后:手机浏览器打开网站 → 登录 → 页脚点"🔔 开启互拍提醒"→ 允许通知 → 换另一部设备也开一次,然后随便记一笔试试。
@@ -162,6 +163,7 @@ npx cap sync android        # 把 ../guai-site 同步进安卓工程
 - 密码只存 Supabase 服务端,前端只拿临时 token(1 小时过期自动续期)。
 - 三张表 RLS 限制"仅登录用户读写";照片桶公开读但文件名是随机 UUID,猜不到。
 - `anon key` 是公开密钥,进仓库没问题;但仓库建议保持私有(信、情话等静态内容本身无登录保护)。
+- Web Push 接口 `notify-moment` **必须已登录 JWT** 才能调用;匿名 key 会被 401。
 - 网址不要发给外人;密码定期在 Supabase 后台换。
 
 ---

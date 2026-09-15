@@ -326,16 +326,18 @@ async function sbSaveSubscription(sub) {
   });
 }
 
-/* 通知另一半："xx 记了一件小事"。函数未部署时静默失败，不影响记录 */
+/* 通知另一半："xx 记了一件小事"。未登录不发；函数未部署时静默失败 */
 async function sbNotifyPush(author, text) {
+  if (!sbLoggedIn()) return false;
   await sbEnsureFresh();
   const s = sbSession();
+  if (!s || !s.access_token) return false;
   const url = sbBase() + '/functions/v1/notify-moment';
   return fetch(url, {
     method: 'POST',
     headers: sbHeaders({
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + ((s && s.access_token) ? s.access_token : CONFIG.supabase.anonKey)
+      'Authorization': 'Bearer ' + s.access_token
     }),
     body: JSON.stringify({ author: author, text: text || '' })
   }).then(resp => {
