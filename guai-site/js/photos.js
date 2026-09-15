@@ -1,6 +1,11 @@
 /* =====================================================
-   1.html 照片墙：云端列表/上传/大图弹窗（说明/下载/删除）
+   照片墙 / 盛世美照：云端列表/上传/大图弹窗
+   body[data-gallery="beauty"] → beauty_photos 表；否则 photos 表
    ===================================================== */
+const GALLERY_TABLE = document.body && document.body.dataset.gallery === 'beauty'
+  ? 'beauty_photos'
+  : 'photos';
+const IS_BEAUTY = GALLERY_TABLE === 'beauty_photos';
 const grid = document.getElementById('photoGrid');
 const photoUploadBtn = document.getElementById('photoUploadBtn');
 const photoFileInput = document.getElementById('photoFileInput');
@@ -18,6 +23,10 @@ const photoModalTip = document.getElementById('photoModalTip');
 
 function renderPhotoGridLocal() {
   if (!grid) return;
+  if (IS_BEAUTY) {
+    grid.innerHTML = '<p class="tl-empty">登录后上传溶宝的盛世美照吧 🐾</p>';
+    return;
+  }
   grid.innerHTML = '';
   CONFIG.photos.forEach(p => {
     const fig = document.createElement('div');
@@ -39,10 +48,18 @@ function renderPhotoGridCloud(photos) {
   if (!grid) return;
   grid.innerHTML = '';
   if (!photos.length) {
-    if (photoUploadTip) photoUploadTip.textContent = '还没有照片哦，点右下角 📷 上传第一张吧 🐾';
+    if (photoUploadTip) {
+      photoUploadTip.textContent = IS_BEAUTY
+        ? '还没有美照哦，点右下角 📷 上传第一张吧 🐾'
+        : '还没有照片哦，点右下角 📷 上传第一张吧 🐾';
+    }
     return;
   }
-  if (photoUploadTip) photoUploadTip.textContent = '点照片可以看大图、写说明、下载、删除 · 点右下角 📷 上传新照片';
+  if (photoUploadTip) {
+    photoUploadTip.textContent = IS_BEAUTY
+      ? '点照片可看大图、写说明、下载、删除 · 📷 上传溶宝的盛世美照'
+      : '点照片可以看大图、写说明、下载、删除 · 点右下角 📷 上传新照片';
+  }
   photos.forEach(t => {
     const fig = document.createElement('div');
     fig.className = 'photo';
@@ -61,7 +78,7 @@ function loadPhotos() {
   if (!grid) return;
   if (!sbReady() || !sbLoggedIn()) { lastPhotosList = []; renderPhotoGridLocal(); return; }
   renderPhotoGridCloud([]);
-  sbListPhotos()
+  sbListPhotos(GALLERY_TABLE)
     .then(list => { lastPhotosList = list; renderPhotoGridCloud(list); })
     .catch(err => {
       lastPhotosList = [];
@@ -85,7 +102,7 @@ if (photoFileInput) {
 
     Promise.all(files.map(f =>
       sbUploadPhoto(f).then(imagePath =>
-        sbAddPhoto(imagePath, '')
+        sbAddPhoto(imagePath, '', GALLERY_TABLE)
       )
     ))
       .then(() => {
@@ -170,7 +187,7 @@ if (photoModalCapSave) {
     if (!currentModalPhoto) return;
     const val = (photoModalCap.value || '').trim();
     photoModalCapSave.disabled = true;
-    sbUpdatePhotoCaption(currentModalPhoto.id, val)
+    sbUpdatePhotoCaption(currentModalPhoto.id, val, GALLERY_TABLE)
       .then(() => {
         currentModalPhoto.caption = val;
         if (photoModalTip) { photoModalTip.textContent = '说明存好啦 🐾'; photoModalTip.classList.remove('err'); }
@@ -188,7 +205,7 @@ if (photoModalCapDel) {
     if (!currentModalPhoto || !currentModalPhoto.caption) return;
     if (!confirm('删掉这张照片的说明吗？')) return;
     photoModalCapDel.disabled = true;
-    sbUpdatePhotoCaption(currentModalPhoto.id, '')
+    sbUpdatePhotoCaption(currentModalPhoto.id, '', GALLERY_TABLE)
       .then(() => {
         currentModalPhoto.caption = '';
         if (photoModalCap) photoModalCap.value = '';
@@ -291,7 +308,7 @@ if (photoModalDel) {
     if (!currentModalPhoto) return;
     if (!confirm('确定删掉这张照片吗？删了就找不回来啦')) return;
     photoModalDel.disabled = true;
-    sbDeletePhotoRecord(currentModalPhoto.id, currentModalPhoto.img || null)
+    sbDeletePhotoRecord(currentModalPhoto.id, currentModalPhoto.img || null, GALLERY_TABLE)
       .then(() => { if (photoModal) photoModal.hidden = true; loadPhotos(); })
       .catch(err => { alert('删除失败：' + err.message); })
       .finally(() => { photoModalDel.disabled = false; });

@@ -3,13 +3,14 @@
         fonts/ 字体文件 cache-first（字体基本不变，一次缓存长期离线可用）
    隐私约定：/photos/ 下的照片一律不缓存，只走网络；
    Supabase 是跨域请求，本 Worker 不拦截 */
-const CACHE = 'guai-kid-v11';
+const CACHE = 'guai-kid-v12';
 const PRECACHE = [
   './',
   './index.html',
   './1.html',
   './2.html',
   './3.html',
+  './beauty.html',
   './report.html',
   './css/style.css',
   './js/config.js',
@@ -17,6 +18,7 @@ const PRECACHE = [
   './js/common.js',
   './js/home.js',
   './js/photos.js',
+  './js/beauty-sheet.js',
   './js/moments.js',
   './js/letter.js',
   './js/report.js',

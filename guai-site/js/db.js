@@ -120,18 +120,20 @@ async function sbListMoments() {
 }
 
 /* ---------- 照片墙：独立 photos 表（与小事 moments 表分开） ---------- */
-async function sbListPhotos() {
+async function sbListPhotos(table) {
   await sbEnsureFresh();
-  const url = sbBase() + '/rest/v1/photos?select=id,image_path,caption,created_at&order=created_at.desc';
+  const t = table === 'beauty_photos' ? 'beauty_photos' : 'photos';
+  const url = sbBase() + '/rest/v1/' + t + '?select=id,image_path,caption,created_at&order=created_at.desc';
   return fetch(url, { headers: sbHeaders() }).then(resp => {
     if (!resp.ok) throw new Error('读取失败 HTTP ' + resp.status);
     return resp.json();
   });
 }
 
-async function sbAddPhoto(imagePath, caption) {
+async function sbAddPhoto(imagePath, caption, table) {
   await sbEnsureFresh();
-  const url = sbBase() + '/rest/v1/photos';
+  const t = table === 'beauty_photos' ? 'beauty_photos' : 'photos';
+  const url = sbBase() + '/rest/v1/' + t;
   return fetch(url, {
     method: 'POST',
     headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
@@ -142,9 +144,10 @@ async function sbAddPhoto(imagePath, caption) {
   });
 }
 
-async function sbDeletePhotoRecord(id, imagePath) {
+async function sbDeletePhotoRecord(id, imagePath, table) {
   await sbEnsureFresh();
-  const url = sbBase() + '/rest/v1/photos?id=eq.' + encodeURIComponent(id);
+  const t = table === 'beauty_photos' ? 'beauty_photos' : 'photos';
+  const url = sbBase() + '/rest/v1/' + t + '?id=eq.' + encodeURIComponent(id);
   const jobs = [fetch(url, { method: 'DELETE', headers: sbHeaders() })];
   if (imagePath) jobs.push(sbDeletePhoto(imagePath));
   return Promise.all(jobs).then(rs => {
@@ -189,10 +192,11 @@ async function sbListSettings() {
   });
 }
 
-/* ---------- 照片说明（photos.caption） ---------- */
-async function sbUpdatePhotoCaption(id, caption) {
+/* ---------- 照片说明（photos / beauty_photos.caption） ---------- */
+async function sbUpdatePhotoCaption(id, caption, table) {
   await sbEnsureFresh();
-  const url = sbBase() + '/rest/v1/photos?id=eq.' + encodeURIComponent(id);
+  const t = table === 'beauty_photos' ? 'beauty_photos' : 'photos';
+  const url = sbBase() + '/rest/v1/' + t + '?id=eq.' + encodeURIComponent(id);
   return fetch(url, {
     method: 'PATCH',
     headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),

@@ -120,6 +120,32 @@ drop policy if exists "photos delete" on public.photos;
 create policy "photos delete" on public.photos
   for delete to authenticated using (true);
 
+-- ---------- 【新增】盛世美照：溶宝专属照片墙 ----------
+create table if not exists public.beauty_photos (
+  id uuid primary key default gen_random_uuid(),
+  image_path text not null,
+  caption text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.beauty_photos enable row level security;
+
+drop policy if exists "beauty read" on public.beauty_photos;
+create policy "beauty read" on public.beauty_photos
+  for select to authenticated using (true);
+
+drop policy if exists "beauty insert" on public.beauty_photos;
+create policy "beauty insert" on public.beauty_photos
+  for insert to authenticated with check (true);
+
+drop policy if exists "beauty update" on public.beauty_photos;
+create policy "beauty update" on public.beauty_photos
+  for update to authenticated using (true) with check (true);
+
+drop policy if exists "beauty delete" on public.beauty_photos;
+create policy "beauty delete" on public.beauty_photos
+  for delete to authenticated using (true);
+
 -- ---------- 照片存储桶 ----------
 insert into storage.buckets (id, name, public)
 values ('moments', 'moments', true)

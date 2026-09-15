@@ -399,3 +399,26 @@ body:not(.locked) .login-overlay{display:none;}
 .tl-reply-form .rec-input{font-size:14px;min-height:0;}
 .tl-reply-who-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .tl-reply-who-row .author-btn{font-size:13px;padding:4px 12px;}
+
+/* ---------- 盛世美照入口 ---------- */
+.beauty-fab{bottom:150px;background:var(--pink);}
+.beauty-sheet[hidden]{display:none;}
+.beauty-sheet{position:fixed;inset:0;z-index:120;}
+.beauty-sheet-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);}
+.beauty-sheet-panel{
+  position:absolute;left:0;right:0;bottom:0;background:var(--paper);
+  border-radius:22px 22px 0 0;padding:18px 20px 28px;
+  box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:sheetUp .28s ease-out;
+}
+.beauty-sheet-handle{
+  width:42px;height:5px;border-radius:99px;background:#d5cfc0;margin:0 auto 14px;
+}
+.beauty-sheet-title{
+  margin:0 0 6px;font-size:18px;color:var(--deep);text-align:center;font-weight:600;
+}
+.beauty-sheet-desc{
+  margin:0 0 16px;font-size:13px;color:#7c8a6a;text-align:center;line-height:1.6;
+}
+.beauty-sheet-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.beauty-sheet-actions .btn{font-size:15px;padding:10px 22px;}
+@keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
