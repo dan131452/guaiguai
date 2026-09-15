@@ -217,6 +217,39 @@ async function sbUpdateMoment(id, changes) {
   });
 }
 
+/* ---------- 小事回复（moment_replies） ---------- */
+async function sbListReplies(momentId) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/moment_replies?select=id,moment_id,author,text,created_at&moment_id=eq.' +
+    encodeURIComponent(momentId) + '&order=created_at.asc';
+  return fetch(url, { headers: sbHeaders() }).then(resp => {
+    if (!resp.ok) throw new Error('读取回复失败 HTTP ' + resp.status);
+    return resp.json();
+  });
+}
+
+async function sbAddReply(momentId, author, text) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/moment_replies';
+  return fetch(url, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ moment_id: momentId, author: author || '', text: text || '' })
+  }).then(resp => {
+    if (!resp.ok) throw new Error('回复保存失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
+async function sbDeleteReply(id) {
+  await sbEnsureFresh();
+  const url = sbBase() + '/rest/v1/moment_replies?id=eq.' + encodeURIComponent(id);
+  return fetch(url, { method: 'DELETE', headers: sbHeaders() }).then(resp => {
+    if (!resp.ok) throw new Error('删除回复失败 HTTP ' + resp.status);
+    return true;
+  });
+}
+
 /* ---------- 上传照片（先压缩，随机文件名） ---------- */
 async function sbUploadPhoto(file) {
   await sbEnsureFresh();

@@ -42,8 +42,35 @@ drop policy if exists "moments insert" on public.moments;
 create policy "moments insert" on public.moments
   for insert to authenticated with check (true);
 
+drop policy if exists "moments update" on public.moments;
+create policy "moments update" on public.moments
+  for update to authenticated using (true) with check (true);
+
 drop policy if exists "moments delete" on public.moments;
 create policy "moments delete" on public.moments
+  for delete to authenticated using (true);
+
+-- ---------- 小事回复 ----------
+create table if not exists public.moment_replies (
+  id uuid primary key default gen_random_uuid(),
+  moment_id uuid not null references public.moments(id) on delete cascade,
+  author text not null default '',
+  text text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.moment_replies enable row level security;
+
+drop policy if exists "replies read" on public.moment_replies;
+create policy "replies read" on public.moment_replies
+  for select to authenticated using (true);
+
+drop policy if exists "replies insert" on public.moment_replies;
+create policy "replies insert" on public.moment_replies
+  for insert to authenticated with check (true);
+
+drop policy if exists "replies delete" on public.moment_replies;
+create policy "replies delete" on public.moment_replies
   for delete to authenticated using (true);
 
 -- ---------- 页面可编辑内容（键值表：如"为什么是 7.25"） ----------
@@ -84,6 +111,10 @@ create policy "photos read" on public.photos
 drop policy if exists "photos insert" on public.photos;
 create policy "photos insert" on public.photos
   for insert to authenticated with check (true);
+
+drop policy if exists "photos update" on public.photos;
+create policy "photos update" on public.photos
+  for update to authenticated using (true) with check (true);
 
 drop policy if exists "photos delete" on public.photos;
 create policy "photos delete" on public.photos

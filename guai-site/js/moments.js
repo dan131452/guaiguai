@@ -1,5 +1,5 @@
 /* =====================================================
-   2.html 我们的小事：时间线、记一笔/编辑、按人筛选、删除
+   2.html 我们的小事：时间线、记一笔/编辑、按人筛选、删除、回复
    （fmtTlDate 在 common.js）
    ===================================================== */
 const tl = document.getElementById('timeline');
@@ -7,6 +7,35 @@ const tl = document.getElementById('timeline');
 let momentsList = [];
 /* 按人筛选：'' = 全部 */
 let currentFilter = '';
+/* momentId → replies[]（云端加载后缓存） */
+const repliesByMoment = {};
+/* 正在输入回复的小事 id */
+let openReplyFor = null;
+
+function repliesHtml(momentId) {
+  const list = repliesByMoment[momentId] || [];
+  if (!list.length && openReplyFor !== momentId) return '';
+  let html = '<div class="tl-replies">';
+  list.forEach(r => {
+    html += '<div class="tl-reply">' +
+      (r.author ? '<span class="tl-reply-who">' + esc(r.author) + '</span>' : '') +
+      '<span class="tl-reply-text">' + esc(r.text) + '</span>' +
+      (r.id ? '<button class="tl-reply-del" type="button" title="删除回复" data-reply-id="' + esc(r.id) + '">✕</button>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function replyFormHtml(momentId) {
+  if (openReplyFor !== momentId) return '';
+  return '<div class="tl-reply-form" data-moment-id="' + esc(momentId) + '">' +
+    '<input class="rec-input tl-reply-input" type="text" maxlength="200" placeholder="回复这条小事…">' +
+    '<div class="tl-reply-actions">' +
+    '<button class="btn tl-reply-save" type="button">发送 🐾</button>' +
+    '<button class="btn btn-plain tl-reply-cancel" type="button">取消</button>' +
+    '</div></div>';
+}
 
 function renderTimeline(items) {
   if (!tl) return;
@@ -27,18 +56,39 @@ function renderTimeline(items) {
         '<button class="tl-del" type="button" title="删除这条" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">✕</button>'
       : '';
     const authorTag = t.author ? '<span class="tl-author">' + esc(t.author) + '</span>' : '';
+    const replyBtn = t.id
+      ? '<button class="tl-reply-btn" type="button" data-id="' + esc(t.id) + '">💬 回复' +
+        ((repliesByMoment[t.id] || []).length ? '（' + repliesByMoment[t.id].length + '）' : '') +
+        '</button>'
+      : '';
     item.innerHTML =
       '<div class="tl-dot">🐾</div>' +
       '<div class="tl-card">' + actHtml +
       '<h3>' + esc(fmtTlDate(t.happened_on || t.date)) + authorTag + '</h3>' +
       (t.text ? '<p>' + esc(t.text) + '</p>' : '') +
-      imgHtml + '</div>';
+      imgHtml +
+      replyBtn +
+      repliesHtml(t.id) +
+      replyFormHtml(t.id) +
+      '</div>';
     tl.appendChild(item);
   });
 }
 
 const MOMENTS_CACHE = 'moments-cache-v1';
-const seedItems = CONFIG.timeline.map(t => ({ date: t.date, text: t.text }));
+const SEED_AUTHOR = '溶宝';
+const seedItems = CONFIG.timeline.map(t => ({ date: t.date, text: t.text, author: SEED_AUTHOR }));
+
+function loadRepliesForList(list) {
+  if (!sbReady() || !sbLoggedIn()) return Promise.resolve();
+  const ids = (list || []).map(t => t.id).filter(Boolean);
+  if (!ids.length) return Promise.resolve();
+  return Promise.all(ids.map(id =>
+    sbListReplies(id)
+      .then(rs => { repliesByMoment[id] = rs; })
+      .catch(() => { /* 单条拉失败不影响整页 */ })
+  )).then(() => { if (tl) renderTimeline(momentsList); });
+}
 
 function loadMoments() {
   if (!tl) return;
@@ -58,6 +108,7 @@ function loadMoments() {
       momentsList = list;
       renderTimeline(list);
       try { localStorage.setItem(MOMENTS_CACHE, JSON.stringify(list)); } catch (e) {}
+      return loadRepliesForList(list);
     })
     .catch(err => {
       const tlSub = document.getElementById('tlSub');
@@ -207,7 +258,7 @@ if (recDate) {
       .finally(() => { recSave.disabled = false; });
   });
 
-  /* 时间线卡片上的 ✎ 编辑 / ✕ 删除 */
+  /* 时间线卡片上的 ✎ 编辑 / ✕ 删除 / 💬 回复 */
   tl.addEventListener('click', e => {
     const editBtn = e.target.closest('.tl-edit');
     if (editBtn) {
@@ -226,13 +277,56 @@ if (recDate) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    const btn = e.target.closest('.tl-del');
-    if (!btn) return;
-    if (!confirm('确定删掉这条小事吗？删了就找不回来啦')) return;
-    btn.disabled = true;
-    sbDeleteMoment(btn.dataset.id, btn.dataset.img || null)
-      .then(() => loadMoments())
-      .catch(err => { btn.disabled = false; alert('删除失败：' + err.message); });
+    const delBtn = e.target.closest('.tl-del');
+    if (delBtn) {
+      if (!confirm('确定删掉这条小事吗？删了就找不回来啦')) return;
+      delBtn.disabled = true;
+      sbDeleteMoment(delBtn.dataset.id, delBtn.dataset.img || null)
+        .then(() => { delete repliesByMoment[delBtn.dataset.id]; loadMoments(); })
+        .catch(err => { delBtn.disabled = false; alert('删除失败：' + err.message); });
+      return;
+    }
+    const replyBtn = e.target.closest('.tl-reply-btn');
+    if (replyBtn) {
+      const id = replyBtn.dataset.id;
+      openReplyFor = (openReplyFor === id) ? null : id;
+      renderTimeline(momentsList);
+      if (openReplyFor) {
+        const input = tl.querySelector('.tl-reply-input');
+        if (input) input.focus();
+      }
+      return;
+    }
+    const replyDel = e.target.closest('.tl-reply-del');
+    if (replyDel) {
+      if (!confirm('删掉这条回复吗？')) return;
+      replyDel.disabled = true;
+      sbDeleteReply(replyDel.dataset.replyId)
+        .then(() => loadMoments())
+        .catch(err => { replyDel.disabled = false; alert('删除失败：' + err.message); });
+      return;
+    }
+    const replyCancel = e.target.closest('.tl-reply-cancel');
+    if (replyCancel) {
+      openReplyFor = null;
+      renderTimeline(momentsList);
+      return;
+    }
+    const replySave = e.target.closest('.tl-reply-save');
+    if (replySave) {
+      const form = replySave.closest('.tl-reply-form');
+      const id = form && form.dataset.momentId;
+      const input = form && form.querySelector('.tl-reply-input');
+      const text = input ? input.value.trim() : '';
+      if (!id) return;
+      if (!text) { if (input) input.focus(); return; }
+      if (!sbReady() || !sbLoggedIn()) { alert('先登录再回复哦 🐾'); return; }
+      replySave.disabled = true;
+      sbAddReply(id, selectedAuthor, text)
+        .then(() => { openReplyFor = null; return loadMoments(); })
+        .catch(err => { replySave.disabled = false; alert('回复失败：' + err.message); });
+      return;
+    }
   });
 
   /* 时间线照片点开大图（只看不删，可下载；openPhotoModal 在 photos.js） */

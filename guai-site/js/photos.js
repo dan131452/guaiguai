@@ -11,6 +11,8 @@ const photoModalClose = document.getElementById('photoModalClose');
 const photoModalDel = document.getElementById('photoModalDel');
 const photoModalCap = document.getElementById('photoModalCap');
 const photoModalCapSave = document.getElementById('photoModalCapSave');
+const photoModalCapDel = document.getElementById('photoModalCapDel');
+const photoModalCapView = document.getElementById('photoModalCapView');
 const photoModalDl = document.getElementById('photoModalDl');
 const photoModalTip = document.getElementById('photoModalTip');
 
@@ -28,6 +30,11 @@ function renderPhotoGridLocal() {
   });
 }
 
+/* 说明：云端有说明才显示；空说明不再用占位文案占格 */
+function photoCaptionText(t) {
+  return (t.caption && t.caption.trim()) || '';
+}
+
 function renderPhotoGridCloud(photos) {
   if (!grid) return;
   grid.innerHTML = '';
@@ -40,10 +47,10 @@ function renderPhotoGridCloud(photos) {
     const fig = document.createElement('div');
     fig.className = 'photo';
     const url = sbPhotoUrl(t.image_path);
-    const cap = (t.caption && t.caption.trim()) || '我们的照片';
+    const cap = photoCaptionText(t);
     fig.innerHTML =
       '<img src="' + esc(url) + '" alt="" loading="lazy" data-id="' + esc(t.id) + '" data-img="' + esc(t.image_path || '') + '">' +
-      '<div class="cap">' + esc(cap) + '</div>';
+      (cap ? '<div class="cap">' + esc(cap) + '</div>' : '');
     grid.appendChild(fig);
   });
 }
@@ -98,6 +105,15 @@ if (photoFileInput) {
    manage=false：只看不删（时间线里的照片），保留下载 */
 let currentModalPhoto = null;
 
+function syncModalCaptionUI() {
+  const cap = (currentModalPhoto && currentModalPhoto.caption) || '';
+  if (photoModalCapView) {
+    photoModalCapView.textContent = cap;
+    photoModalCapView.hidden = !cap;
+  }
+  if (photoModalCapDel) photoModalCapDel.hidden = !cap;
+}
+
 function openPhotoModal(opts) {
   if (!photoModal || !photoModalImg) return;
   currentModalPhoto = opts.manage ? { id: opts.id, img: opts.path || '', caption: opts.caption || '' } : null;
@@ -107,10 +123,17 @@ function openPhotoModal(opts) {
     photoModalCap.value = opts.manage ? (opts.caption || '') : '';
   }
   if (photoModalCapSave) photoModalCapSave.hidden = !opts.manage;
+  if (photoModalCapView) {
+    photoModalCapView.hidden = true;
+    photoModalCapView.textContent = '';
+  }
+  if (photoModalCapDel) photoModalCapDel.hidden = true;
   if (photoModalDel) photoModalDel.hidden = !opts.manage;
   if (photoModalDl) photoModalDl.hidden = false;
   if (photoModalTip) photoModalTip.textContent = '';
+  photoModal.classList.remove('err');
   photoModal.hidden = false;
+  syncModalCaptionUI();
 }
 
 /* 照片墙网格：点照片进弹窗（可管理） */
@@ -141,7 +164,7 @@ if (photoModal) {
   photoModal.addEventListener('click', e => { if (e.target === photoModal) photoModalClose.click(); });
 }
 
-/* 存照片说明 */
+/* 存照片说明：成功后展示在图片下方，照片墙同步更新 */
 if (photoModalCapSave) {
   photoModalCapSave.addEventListener('click', () => {
     if (!currentModalPhoto) return;
@@ -150,7 +173,8 @@ if (photoModalCapSave) {
     sbUpdatePhotoCaption(currentModalPhoto.id, val)
       .then(() => {
         currentModalPhoto.caption = val;
-        if (photoModalTip) photoModalTip.textContent = '说明存好啦 🐾';
+        if (photoModalTip) { photoModalTip.textContent = '说明存好啦 🐾'; photoModalTip.classList.remove('err'); }
+        syncModalCaptionUI();
         loadPhotos();
       })
       .catch(err => { if (photoModalTip) { photoModalTip.textContent = '没存上：' + err.message; photoModalTip.classList.add('err'); } })
@@ -158,7 +182,55 @@ if (photoModalCapSave) {
   });
 }
 
-/* 下载到本地：跨域直链的 download 属性不一定生效，用 fetch 转 blob 强制保存 */
+/* 只删说明，保留照片 */
+if (photoModalCapDel) {
+  photoModalCapDel.addEventListener('click', () => {
+    if (!currentModalPhoto || !currentModalPhoto.caption) return;
+    if (!confirm('删掉这张照片的说明吗？')) return;
+    photoModalCapDel.disabled = true;
+    sbUpdatePhotoCaption(currentModalPhoto.id, '')
+      .then(() => {
+        currentModalPhoto.caption = '';
+        if (photoModalCap) photoModalCap.value = '';
+        if (photoModalTip) { photoModalTip.textContent = '说明已删除 🐾'; photoModalTip.classList.remove('err'); }
+        syncModalCaptionUI();
+        loadPhotos();
+      })
+      .catch(err => { if (photoModalTip) { photoModalTip.textContent = '没删掉：' + err.message; photoModalTip.classList.add('err'); } })
+      .finally(() => { photoModalCapDel.disabled = false; });
+  });
+}
+
+/* 下载：优先系统分享（安卓/iOS 常见入口可存进相册），否则 fetch 转 blob 强制保存 */
+async function downloadPhotoBlob(src) {
+  const resp = await fetch(src);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const blob = await resp.blob();
+  const mime = blob.type || 'image/jpeg';
+  const name = 'qiaiwu-' + Date.now() + (mime.indexOf('png') > -1 ? '.png' : '.jpg');
+
+  /* Web Share API：手机浏览器/微信里点"保存到相册"更直接 */
+  try {
+    const file = new File([blob], name, { type: mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: '我们的照片' });
+      return 'share';
+    }
+  } catch (e) {
+    /* 用户取消分享不算失败，继续走下载 */
+    if (e && e.name === 'AbortError') return 'cancel';
+  }
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return 'download';
+}
+
 if (photoModalDl) {
   photoModalDl.addEventListener('click', e => {
     e.preventDefault();
@@ -166,21 +238,18 @@ if (photoModalDl) {
     if (!src) return;
     const old = photoModalDl.textContent;
     photoModalDl.textContent = '下载中…';
-    fetch(src).then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.blob();
-    }).then(b => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(b);
-      a.download = 'qiaiwu-' + Date.now() + '.jpg';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      if (photoModalTip) photoModalTip.textContent = '已保存到你的下载文件夹啦 🐾';
+    downloadPhotoBlob(src).then(mode => {
+      if (mode === 'cancel') {
+        if (photoModalTip) photoModalTip.textContent = '';
+      } else if (mode === 'share') {
+        if (photoModalTip) { photoModalTip.textContent = '选好了保存位置就进相册啦 🐾'; photoModalTip.classList.remove('err'); }
+      } else {
+        if (photoModalTip) { photoModalTip.textContent = '已保存到你的下载文件夹啦 🐾（相册里看不到的话，用系统分享再存一次）'; photoModalTip.classList.remove('err'); }
+      }
     }).catch(() => {
       /* 拉不动就开新标签页，让用户长按保存 */
       window.open(src, '_blank');
+      if (photoModalTip) { photoModalTip.textContent = '已打开原图，可长按保存到相册'; photoModalTip.classList.remove('err'); }
     }).finally(() => { photoModalDl.textContent = old; });
   });
 }
