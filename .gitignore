@@ -37,3 +37,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+# --- Web Push 私钥，绝不入库 ---
+vapid-keys.json
